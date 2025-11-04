@@ -153,45 +153,45 @@ class ProjectManager:
                 return p
         return None
 
-    # # ------------------ Story operations ------------------
-    # def _next_story_id(self, project: Dict[str, Any]) -> int:
-    #     ids = [s.get("id", 0) for s in project.get("stories", [])]
-    #     return max(ids, default=0) + 1
+    # ------------------ Story operations ------------------
+    def _next_story_id(self, project: Dict[str, Any]) -> int:
+        ids = [s.get("id", 0) for s in project.get("stories", [])]
+        return max(ids, default=0) + 1
 
-    # def add_story_to_project(self, project_id: int, title: str, description: str, points: int) -> Dict[str, Any]:
-    #     """Add a new story under the given project.
+    def add_story_to_project(self, project_id: int, title: str, description: str, points: int) -> Dict[str, Any]:
+        """Add a new story under the given project.
 
-    #     Validates inputs and duplicate story titles within the project.
-    #     Returns the created story dict.
-    #     """
-    #     title = (title or "").strip()
-    #     if not title:
-    #         raise ValueError("Story title cannot be blank")
+        Validates inputs and duplicate story titles within the project.
+        Returns the created story dict.
+        """
+        title = (title or "").strip()
+        if not title:
+            raise ValueError("Story title cannot be blank")
 
-    #     project = self._find_project(project_id)
-    #     if project is None:
-    #         raise ValueError("Project not found")
+        project = self._find_project(project_id)
+        if project is None:
+            raise ValueError("Project not found")
 
-    #     for s in project.get("stories", []):
-    #         if s.get("title", "").strip().lower() == title.lower():
-    #             raise ValueError("Story title already exists in project")
+        for s in project.get("stories", []):
+            if s.get("title", "").strip().lower() == title.lower():
+                raise ValueError("Story title already exists in project")
 
-    #     story = Story(
-    #         id=self._next_story_id(project),
-    #         title=title,
-    #         description=description or "",
-    #         points=int(points or 0),
-    #         tasks=[],
-    #         created_at=_now_iso(),
-    #         modified_at=_now_iso(),
-    #         progress=0.0,
-    #     ).to_dict()
+        story = Story(
+            id=self._next_story_id(project),
+            title=title,
+            description=description or "",
+            points=int(points or 0),
+            tasks=[],
+            created_at=_now_iso(),
+            modified_at=_now_iso(),
+            progress=0.0,
+        ).to_dict()
 
-    #     project.setdefault("stories", []).append(story)
-    #     project["modified_at"] = _now_iso()
-    #     self.save_data()
-    #     print(f"Story added to project {project_id}: {story['id']} - {story['title']}")
-    #     return story
+        project.setdefault("stories", []).append(story)
+        project["modified_at"] = _now_iso()
+        self.save_data()
+        print(f"Story added to project {project_id}: {story['id']} - {story['title']}")
+        return story
 
     # def edit_story(self, project_id: int, story_id: int, description: Optional[str] = None, points: Optional[int] = None) -> Dict[str, Any]:
     #     """Edit a story's description or points. Updates modified timestamp."""
