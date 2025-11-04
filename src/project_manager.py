@@ -193,24 +193,24 @@ class ProjectManager:
         print(f"Story added to project {project_id}: {story['id']} - {story['title']}")
         return story
 
-    # def edit_story(self, project_id: int, story_id: int, description: Optional[str] = None, points: Optional[int] = None) -> Dict[str, Any]:
-    #     """Edit a story's description or points. Updates modified timestamp."""
-    #     project = self._find_project(project_id)
-    #     if project is None:
-    #         raise ValueError("Project not found")
+    def edit_story(self, project_id: int, story_id: int, description: Optional[str] = None, points: Optional[int] = None) -> Dict[str, Any]:
+        """Edit a story's description or points. Updates modified timestamp."""
+        project = self._find_project(project_id)
+        if project is None:
+            raise ValueError("Project not found")
 
-    #     for s in project.get("stories", []):
-    #         if s.get("id") == story_id:
-    #             if description is not None:
-    #                 s["description"] = description
-    #             if points is not None:
-    #                 s["points"] = int(points)
-    #             s["modified_at"] = _now_iso()
-    #             project["modified_at"] = _now_iso()
-    #             self.save_data()
-    #             return s
+        for s in project.get("stories", []):
+            if s.get("id") == story_id:
+                if description is not None:
+                    s["description"] = description
+                if points is not None:
+                    s["points"] = int(points)
+                s["modified_at"] = _now_iso()
+                project["modified_at"] = _now_iso()
+                self.save_data()
+                return s
 
-    #     raise ValueError("Story not found")
+        raise ValueError("Story not found")
 
     # def delete_story(self, project_id: int, story_id: int) -> None:
     #     """Delete a story identified by ID from the given project."""
