@@ -212,21 +212,21 @@ class ProjectManager:
 
         raise ValueError("Story not found")
 
-    # def delete_story(self, project_id: int, story_id: int) -> None:
-    #     """Delete a story identified by ID from the given project."""
-    #     project = self._find_project(project_id)
-    #     if project is None:
-    #         raise ValueError("Project not found")
+    def delete_story(self, project_id: int, story_id: int) -> None:
+        """Delete a story identified by ID from the given project."""
+        project = self._find_project(project_id)
+        if project is None:
+            raise ValueError("Project not found")
 
-    #     stories = project.get("stories", [])
-    #     new_stories = [s for s in stories if s.get("id") != story_id]
-    #     if len(new_stories) == len(stories):
-    #         raise ValueError("Story not found")
+        stories = project.get("stories", [])
+        new_stories = [s for s in stories if s.get("id") != story_id]
+        if len(new_stories) == len(stories):
+            raise ValueError("Story not found")
 
-    #     project["stories"] = new_stories
-    #     project["modified_at"] = _now_iso()
-    #     self.save_data()
-    #     print(f"Deleted story {story_id} from project {project_id}")
+        project["stories"] = new_stories
+        project["modified_at"] = _now_iso()
+        self.save_data()
+        print(f"Deleted story {story_id} from project {project_id}")
 
     # # ------------------ Task operations ------------------
     # def add_task_to_story(self, project_id: int, story_id: int, title: str, assigned_to: Optional[str] = None, estimated_hours: Optional[float] = None) -> Dict[str, Any]:
