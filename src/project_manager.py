@@ -303,4 +303,36 @@ class ProjectManager:
     #             return s
     #     raise ValueError("Story not found")
 
+    def create_project(self, title: str, description: str, owner: str) -> Dict[str, Any]:
+        """Create a new project and persist it.
+
+        Raises ValueError for blank titles or duplicate titles (case-insensitive).
+        Returns the created project dict.
+        """
+        title = (title or "").strip()
+        if not title:
+            raise ValueError("Project title cannot be blank")
+
+        # duplicate check
+        for p in self._data.get("projects", []):
+            if p.get("title", "").strip().lower() == title.lower():
+                raise ValueError("Project title already exists")
+
+        project = {
+            "id": self._next_project_id(),
+            "title": title,
+            "description": description or "",
+            "owner": owner or "",
+            "stories": [],
+            "created_at": _now_iso(),
+            "modified_at": _now_iso(),
+        }
+
+        self._data.setdefault("projects", []).append(project)
+        self.save_data()
+        print(f"Project created: {project['id']} - {project['title']}")
+        return project
+
+    
+
 __all__ = ["ProjectManager"]
