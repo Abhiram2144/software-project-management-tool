@@ -19,12 +19,12 @@ We maintain a structured set of user stories to capture all functional and non-f
 
 ### Sprint Schedule  
 
-| Sprint | Duration | Focus | Stories | Points | Owners |
+| Sprint | Duration | Focus | Stories Planned | Stories Completed | Owners |
 |:--|:--|:--|:--|:--|:--|
-| **1** | Oct 22 – Nov 4 | Core backend, CLI, JSON persistence, black-box tests | 6 (3 each) | 22 | Abhiram & Roshan |
-| **2** | Nov 5 – Nov 18 | Sprint linking, velocity calc, white-box tests | 6 (3 each) | 26 | Abhiram & Roshan |
-| **3** | Nov 19 – Dec 2 | Metrics engine (PERT, COCOMO I/II, EVM) | 5 (2–3 each) | 22 | Abhiram & Roshan |
-| **4** | Dec 3 – Dec 15 | Symbolic + Concolic testing, QA, final docs & video | 5 (2–3 each) | 24 | Abhiram & Roshan |
+| **1** | Oct 22 – Nov 4 | Core backend, CLI, JSON persistence, black-box tests | 8 | 8 | Abhiram & Roshan |
+| **2** | Nov 5 – Nov 18 | Sprint linking, velocity calc, white-box tests | 6 | - | Abhiram & Roshan & Charan |
+| **3** | Nov 19 – Dec 2 | Metrics engine (PERT, COCOMO I/II, EVM) | 5 | - | Abhiram & Roshan |
+| **4** | Dec 3 – Dec 15 | Symbolic + Concolic testing, QA, final docs & video | 5 | - | Abhiram & Roshan & Charan |
 
 ### Planning Artifacts  
 - **Story-Point Estimation:** done via online Planning Poker (see `/docs/sprint0/planning_poker_sprint0.png`).  
@@ -41,12 +41,26 @@ Project progress is monitored using quantitative metrics and visual dashboards.
 - **Earned Value Management (EVM):** PV, EV, AC tracked in `/docs/metrics/`.  
 - **Review Cadence:** bi-weekly stand-ups; sprint retros logged in README.  
 
-**Evidence (to be added)**  
-- `/docs/sprint1/burndown_start.png`  
-- `/docs/sprint2/burndown_end.png`  
-- `/docs/sprint3/velocity_chart.png`  
-- `/docs/sprint3/evm_results.png`  
+### ✅ Sprint 1 Summary  
+**User Stories Completed (8):**  
+- PRJ-001: Create New Project (#4)  
+- PRJ-002: View All Projects (#5)  
+- STY-001: Add User Story (#6)  
+- STY-002: Edit or Update User Story (#7)  
+- STY-003: Delete User Story (#8)  
+- MET-001: Calculate PERT (#24)  
+- MET-002: COCOMO I (#25)  
+- MET-003: COCOMO II (#26)  
 
+**Sprint 1 Velocity:** 8/8 stories completed  
+**Carryover:** 0 stories  
+
+> Strong adherence to sprint goals with 100% story completion rate.
+
+**Evidence (Sprint 1)**  
+- `/docs/sprint1/backlog-stories-end-of-sprint-1.png` 
+- `/docs/sprint1/capacity.png`
+- `/docs/sprint1/roadmap.png`
 ---
 
 ## 4. Configuration Management  
@@ -60,7 +74,8 @@ Configuration is controlled through GitHub branches, pull requests, and version 
 
 **Evidence**  
 - `/docs/sprint0/branches_proof.png`  
-- `/docs/sprint0/sprint0_tag.png`  
+- `/docs/sprint0/file-structure.png`  
+- `/docs/sprint1/CMMI_LVL2.png`  
 - PR screenshots each sprint.  
 
 ---
@@ -75,10 +90,9 @@ Quality assurance is maintained through structured testing and peer reviews.
 | Symbolic | Path conditions & constraints | z3-solver (optional) | Abhiram | 4 |
 | Concolic | Mixed symbolic/concrete execution | Custom Python module | Roshan | 4 |
 
-**QA Checklist**  
-- Minimum coverage ≥ 85 % by Sprint 4.  
-- All test failures documented with root cause analysis.  
-- Peer code review for every PR before merge.  
+### Sprint 1 QA Summary  
+- PR reviews introduced for quality gatekeeping.  
+- Baseline test coverage established for improvement in Sprint 2.  
 
 ---
 
@@ -100,9 +114,9 @@ Evidence screenshots and charts will reside in `/docs/metrics/` after Sprint 3.
 | Sprint | Folder | Key Artifacts |
 |:--|:--|:--|
 | **0** | `/docs/sprint0` | Repo setup, user stories, CMMI skeleton, branch rules |
-| **1** | `/docs/sprint1` | Core backend code, CLI demo, black-box tests |
-| **2** | `/docs/sprint2` | Sprint linking, velocity calc, white-box coverage |
-| **3** | `/docs/sprint3` | PERT, COCOMO, EVM charts, metrics validation |
+| **1** | `/docs/sprint1` | Core backend code, CLI demo, PERT & COCOMO features implemented, PR traceability |
+| **2** | `/docs/sprint2` | Sprint linking, velocity calc, white-box coverage, black-box tests |
+| **3** | `/docs/sprint3` | EVM charts, metrics validation |
 | **4** | `/docs/sprint4` | Symbolic & Concolic testing, final QA, report & video |
 
 ---
