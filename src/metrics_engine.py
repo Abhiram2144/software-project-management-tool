@@ -102,3 +102,94 @@ def calculate_pert(optimistic: float, likely: float, pessimistic: float) -> floa
         "staff": float(staff),
         "productivity": float(productivity),
     }
+
+
+
+
+    def calculate_cocomo_II(
+    size_kloc: float,
+    scale_factors: Dict[str, float],
+    effort_multipliers: Dict[str, float],
+    *,
+    A: float = 2.94,
+    B: float = 0.91,
+) -> Dict[str, object]:
+    """
+    Simplified COCOMO II estimator (lightweight).
+
+    Inputs:
+    - size_kloc: float - size in KLOC, must be > 0
+    - scale_factors: dict of scale factor names to numeric values (expected several factors).
+      Example keys: "PREC","FLEX","RESL","TEAM","PMAT" (this lightweight version accepts any numeric set).
+    - effort_multipliers: dict of effort multiplier names to numeric factors (EAF multipliers).
+      EAF is the product of all effort_multipliers.
+
+    Optional kwargs:
+    - A: calibration constant (default 2.94)
+    - B: baseline exponent constant (default 0.91)
+
+    Returns:
+    - dict:
+      {
+        "effort_pm": float,
+        "schedule_months": float,
+        "details": {
+            "A": float,
+            "B": float,
+            "E": float,
+            "EAF": float,
+            "scale_factors": {...},
+            "effort_multipliers": {...}
+        }
+      }
+
+    Simplified model used (documented):
+    - E = B + 0.01 * sum(scale_factors.values())
+    - EAF = product(effort_multipliers.values())
+    - Effort (person-months) = A * (Size^E) * EAF
+    - Schedule (months) = 3.67 * (Effort ^ (0.28 + 0.2 * (E - B)))
+
+    Validation:
+    - Raises TypeError if size_kloc not numeric or SF/EM values non-numeric
+    - Raises ValueError if size_kloc <= 0 or scale/effort dicts are empty
+    """
+    if not _is_number(size_kloc):
+        raise TypeError("size_kloc must be numeric")
+    if size_kloc <= 0:
+        raise ValueError("size_kloc must be greater than 0")
+    if not isinstance(scale_factors, dict) or not scale_factors:
+        raise ValueError("scale_factors must be a non-empty dict")
+    if not isinstance(effort_multipliers, dict) or not effort_multipliers:
+        raise ValueError("effort_multipliers must be a non-empty dict")
+
+    for k, v in scale_factors.items():
+        if not _is_number(v):
+            raise TypeError(f"scale_factors['{k}'] must be numeric")
+    for k, v in effort_multipliers.items():
+        if not _is_number(v):
+            raise TypeError(f"effort_multipliers['{k}'] must be numeric")
+
+    sum_sf = sum(float(v) for v in scale_factors.values())
+    E = B + 0.01 * sum_sf
+    eaf = 1.0
+    for v in effort_multipliers.values():
+        eaf *= float(v)
+
+    effort_pm = A * (size_kloc ** E) * eaf
+
+    schedule_exponent = 0.28 + 0.2 * (E - B)
+    schedule_exponent = max(-1.0, min(2.0, schedule_exponent))
+    schedule_months = 3.67 * (effort_pm ** schedule_exponent) if effort_pm > 0 else 0.0
+
+    return {
+        "effort_pm": float(effort_pm),
+        "schedule_months": float(schedule_months),
+        "details": {
+            "A": float(A),
+            "B": float(B),
+            "E": float(E),
+            "EAF": float(eaf),
+            "scale_factors": dict(scale_factors),
+            "effort_multipliers": dict(effort_multipliers),
+        },
+    }
