@@ -1,24 +1,39 @@
-"""
-metrics_engine.py
-Implements software measurement metrics like PERT, COCOMO, and EVM.
-Generates quantitative indicators for project planning and monitoring.
-"""
-
-def calculate_pert(optimistic: int, likely: int, pessimistic: int):
-    """Calculate expected time using PERT formula."""
-    pass
+from typing import Dict, Optional
+import numbers
 
 
-def calculate_cocomo_I(size_kloc: float):
-    """Estimate cost and effort using COCOMO I."""
-    pass
+__all__ = [
+    "calculate_pert",
+    "calculate_cocomo_I",
+    "calculate_cocomo_II",
+]
 
 
-def calculate_cocomo_II(size_kloc: float, scale_factors: dict, effort_multipliers: dict):
-    """Estimate effort using COCOMO II with additional parameters."""
-    pass
+def _is_number(value) -> bool:
+    return isinstance(value, numbers.Real)
 
 
-def compute_evm(pv: float, ev: float, ac: float):
-    """Compute Earned Value Management metrics (CPI, SPI)."""
-    pass
+def calculate_pert(optimistic: float, likely: float, pessimistic: float) -> float:
+    """
+    Calculate expected time using the PERT formula.
+
+    Inputs:
+    - optimistic: float (O) - must be numeric and >= 0
+    - likely: float (M) - must be numeric and >= 0
+    - pessimistic: float (P) - must be numeric and >= 0
+
+    Returns:
+    - expected time as float using formula (O + 4*M + P) / 6
+
+    Raises:
+    - TypeError: if any input is not numeric
+    - ValueError: if any input is negative
+    """
+    for name, v in (("optimistic", optimistic), ("likely", likely), ("pessimistic", pessimistic)):
+        if not _is_number(v):
+            raise TypeError(f"{name} must be numeric")
+        if v < 0:
+            raise ValueError(f"{name} must be non-negative")
+
+    expected = (optimistic + 4 * likely + pessimistic) / 6.0
+    return float(expected)
