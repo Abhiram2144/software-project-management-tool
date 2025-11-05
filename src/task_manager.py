@@ -1,24 +1,42 @@
 """
 task_manager.py
-Handles task creation, assignment, completion, and dependencies within user stories.
-Supports Agile tracking of progress and time logging.
+Thin wrapper functions for task operations. Delegates to ProjectManager so
+that tasks live under stories in the canonical JSON store.
 """
+from typing import List, Dict, Optional
 
-def create_task(title: str, assigned_to: str, estimated_hours: int):
-    """Create a new task for a user story."""
-    pass
+from .project_manager import ProjectManager
 
-
-def mark_task_complete(task_id: str):
-    """Mark a task as completed."""
-    pass
+_pm = ProjectManager()
 
 
-def calculate_task_progress(story_id: str):
-    """Calculate overall progress of tasks under a given story."""
-    pass
+def create_task(project_id: int, story_id: int, title: str, assigned_to: Optional[str] = None, estimated_hours: Optional[float] = None) -> Dict:
+    """Create a new task under the given story. Returns the created task dict."""
+    return _pm.add_task_to_story(project_id, story_id, title=title, assigned_to=assigned_to, estimated_hours=estimated_hours)
 
 
-def list_all_tasks():
-    """Return all tasks from all user stories."""
-    pass
+def mark_task_complete(project_id: int, story_id: int, task_title: str) -> Dict:
+    """Mark a task (by title) as complete and update story progress."""
+    return _pm.mark_task_complete(project_id, story_id, task_title)
+
+
+def calculate_task_progress(project_id: int, story_id: int) -> float:
+    """Return the progress percentage for the given story's tasks."""
+    s = _pm.get_story(project_id, story_id)
+    return float(s.get("progress", 0.0))
+
+
+def list_all_tasks(project_id: Optional[int] = None) -> List[Dict]:
+    """List tasks across all projects or for a single project."""
+    tasks = []
+    if project_id is None:
+        for p in _pm._data.get("projects", []):
+            for s in p.get("stories", []):
+                for t in s.get("tasks", []):
+                    tasks.append(t)
+    else:
+        proj = _pm.get_project(project_id)
+        for s in proj.get("stories", []):
+            for t in s.get("tasks", []):
+                tasks.append(t)
+    return tasks
