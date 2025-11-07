@@ -144,7 +144,6 @@ class SprintManager:
                 return s
         return None
     
-# ------------------ Story in sprint operations ------------------
     def add_story_to_sprint(self, sprint_id: int, title: str, story_points: int, status: str = "todo") -> Dict[str, Any]:
        
         title = (title or "").strip()
@@ -178,6 +177,38 @@ class SprintManager:
         return story
     
 
+
+    def calculate_velocity(self, sprint_id: int) -> int:
+        """Calculate velocity as sum of story_points for stories with status == 'done'."""
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        total = 0
+        for st in sprint.get("stories", []):
+            if st.get("status") == "done":
+                total += int(st.get("story_points", 0))
+        return total
+
+    def get_sprint_status(self, sprint_id: int) -> Dict[str, Any]:
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        planned = sum(int(st.get("story_points", 0)) for st in sprint.get("stories", []))
+        completed = sum(int(st.get("story_points", 0)) for st in sprint.get("stories", []) if st.get("status") == "done")
+        remaining_capacity = int(sprint.get("capacity", 0)) - planned
+        return {
+            "id": sprint.get("id"),
+            "name": sprint.get("name"),
+            "start_date": sprint.get("start_date"),
+            "end_date": sprint.get("end_date"),
+            "capacity": sprint.get("capacity"),
+            "planned_points": planned,
+            "completed_points": completed,
+            "remaining_capacity": remaining_capacity,
+            "stories": sprint.get("stories", []),
+        }
 
 __all__ = ["SprintManager"]
 
