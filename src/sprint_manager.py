@@ -143,7 +143,39 @@ class SprintManager:
             if s.get("id") == sprint_id:
                 return s
         return None
+    
+# ------------------ Story in sprint operations ------------------
+    def add_story_to_sprint(self, sprint_id: int, title: str, story_points: int, status: str = "todo") -> Dict[str, Any]:
+       
+        title = (title or "").strip()
+        if not title:
+            raise ValueError("Story title cannot be blank")
 
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        for st in sprint.get("stories", []):
+            if st.get("title", "").strip().lower() == title.lower():
+                raise ValueError("Story title already exists in sprint")
+
+        if not isinstance(story_points, int) or story_points < 0:
+            raise ValueError("story_points must be non-negative integer")
+
+        story = SprintStory(
+            id=self._next_story_id(sprint),
+            title=title,
+            story_points=int(story_points),
+            status=status,
+            created_at=_now_iso(),
+            modified_at=_now_iso(),
+        ).to_dict()
+
+        sprint.setdefault("stories", []).append(story)
+        sprint["modified_at"] = _now_iso()
+        self.save_data()
+        print(f"Added story to sprint {sprint_id}: {story['id']} - {story['title']}")
+        return story
     
 
 
