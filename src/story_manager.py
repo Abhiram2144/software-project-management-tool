@@ -8,7 +8,7 @@ to import and use without instantiating ProjectManager directly.
 """
 from typing import List, Dict, Optional
 
-from .project_manager import ProjectManager
+from .project_manager import ProjectManager, _now_iso
 
 # Default manager instance (uses data/projects.json by default)
 _pm = ProjectManager()
@@ -32,7 +32,7 @@ def assign_story_to_sprint(project_id: int, story_id: int, sprint_id: int) -> Di
     for s in proj.get("stories", []):
         if s.get("id") == story_id:
             s["sprint_id"] = sprint_id
-            s["modified_at"] = _pm._now_iso() if hasattr(_pm, "_now_iso") else s.get("modified_at")
+            s["modified_at"] = _now_iso()
             proj["modified_at"] = s.get("modified_at")
             _pm.save_data()
             return s
@@ -45,7 +45,7 @@ def update_story_status(project_id: int, story_id: int, status: str) -> Dict:
     for s in proj.get("stories", []):
         if s.get("id") == story_id:
             s["status"] = status
-            s["modified_at"] = _pm._now_iso() if hasattr(_pm, "_now_iso") else s.get("modified_at")
+            s["modified_at"] = _now_iso()
             proj["modified_at"] = s.get("modified_at")
             _pm.save_data()
             return s
