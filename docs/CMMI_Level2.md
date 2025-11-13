@@ -12,6 +12,9 @@
 - /docs/sprint0/planning_poker.png
 - /docs/sprint0/team-capacity-with-priorities.png
 - /docs/sprint0/project-board.png
+- /docs/sprint0/repo-structure.png
+- /docs/sprint0/branch-strategy.png
+
 
 
 
