@@ -1,0 +1,237 @@
+🟩 BEFORE SPRINT 1 (Sprint 0 Completion Evidence)
+
+Sprint 0 is planning only, no actual coding.
+
+You must have the following completed in the repo before starting Sprint 1:
+
+✅ 1. User Stories Evidence
+
+Required files:
+
+/docs/sprint0/user_stories.txt
+
+/docs/sprint0/userstories_list.png → Screenshot of all 27 GitHub issues
+
+The marker checks:
+✔ All stories listed
+✔ Stories split among 3 members
+✔ Foundational planning complete
+
+✅ 2. Planning Poker Evidence
+
+This is mandatory for LO2.
+
+Required:
+
+/docs/sprint0/planning_poker.png
+
+The marker checks:
+✔ Story points assigned
+✔ Collaborative estimation
+✔ Photos/screenshots of tool
+
+✅ 3. Project Board Setup (Backlog Evidence)
+
+Screenshots needed:
+
+/docs/sprint0/project_board_backlog.png
+
+/docs/sprint0/sprint_assignments.png
+
+/docs/sprint0/team_capacity_setup.png
+
+Must show:
+✔ All issues imported into board
+✔ Issues distributed correctly to each sprint
+✔ Deadline timeline visible
+✔ Assigned owners per story
+✔ Story points visible
+
+✅ 4. Branching Strategy & Repository Structure
+
+Files:
+
+/docs/sprint0/branch_strategy.png
+
+/docs/sprint0/repo_structure.png
+
+Must show:
+✔ main / dev / story/* branches
+✔ branch protection
+✔ planned workflow
+
+✅ 5. CMMI Level 2 Skeleton
+
+File:
+
+/docs/CMMI_Level2.md
+
+Should show Sprint 0 planning under:
+
+Requirements Management
+
+Project Planning
+
+Monitoring & Control
+
+Configuration Management
+
+🟩 If you complete all items above, Sprint 0 → 100% marks.
+🟦 DURING SPRINT 1 (Active Development Evidence)
+
+Sprint 1 is where real development begins.
+
+The examiners want traceability and team process.
+
+You must collect 3 categories of evidence during development:
+
+🔵 1. Story-Based Branching
+
+For each Sprint 1 story:
+
+Create a branch:
+story/PRJ-00X-feature-name
+
+Commit work to that branch
+
+Write meaningful commit messages
+
+Evidence:
+Screenshot:
+
+/docs/sprint1/branches_in_use.png
+
+🔵 2. Pull Requests (PRs) with Peer Review
+
+This is critical for marks.
+
+Every PR must include:
+✔ Meaningful title — e.g., “Implement PRJ-001 Create Project Functionality”
+✔ Link to issue — e.g., Fixes #14
+✔ Screenshots (if applicable)
+✔ 1 peer review comment
+✔ Reviewer approval
+
+Evidence (for each PR):
+
+/docs/sprint1/pr1.png
+
+/docs/sprint1/pr2.png
+
+etc.
+
+Markers check PR review quality, so ensure:
+
+Feedback comments
+
+Approvals
+
+Discussions
+
+🔵 3. Development Progress Tracking
+
+Update your project board LIVE.
+
+Required:
+
+Move issues from Sprint 1 → In Progress → Done
+
+Drag PRs into board columns
+
+Evidence screenshots:
+
+/docs/sprint1/board_mid_sprint.png (progress)
+
+/docs/sprint1/board_end_sprint.png (finished)
+
+🟥 AFTER SPRINT 1 (Completion Evidence)
+
+This is the part most students miss — and they lose marks.
+
+You must document sprint completion with:
+
+🔴 1. Burndown Chart Evidence
+
+You MUST produce a burndown chart for Sprint 1.
+
+Even a simple chart made in Excel/Google Sheets counts.
+
+Evidence:
+
+/docs/sprint1/burndown_sprint1.png
+
+🔴 2. Sprint Retrospective
+
+Add a dedicated file:
+
+/docs/sprint1/retrospective.md
+
+Contents:
+
+## What went well
+- Team completed 9 stories within capacity.
+- PR reviews improved code quality.
+
+## What didn’t go well
+- Story point estimation was slightly inaccurate.
+- Branch conflicts occurred early.
+
+## Action points for Sprint 2
+- Improve review scheduling.
+- Introduce automated tests earlier.
+
+🔴 3. CMMI Level 2 Sprint 1 Additions
+
+Update:
+
+/docs/CMMI_Level2.md
+
+Add Sprint 1 details under:
+
+Project Monitoring & Control
+
+QA
+
+Configuration Management
+
+🔴 4. Tag the Sprint
+
+Use:
+
+git tag -a sprint1 -m "Sprint 1 Completed"
+git push origin sprint1
+
+
+This is mandatory for Agile grading.
+
+💯 FINAL SUMMARY (PRINT THIS OUT)
+BEFORE SPRINT 1
+MUST HAVE:
+
+✔ User stories list
+✔ Issues created
+✔ Planning Poker
+✔ Sprints assigned
+✔ Branch strategy
+✔ CMMI skeleton
+✔ Repo structure screenshot
+
+DURING SPRINT 1
+MUST DO:
+
+✔ Branch per story
+✔ PRs per story
+✔ Peer review on PRs
+✔ Progress on project board
+✔ Commit history per story
+
+AFTER SPRINT 1
+MUST CAPTURE:
+
+✔ Burndown chart
+✔ Sprint retrospective
+✔ CMMI Level 2 updated
+✔ Tagged release (sprint1)
+✔ Final project board screenshot
+
+If you follow this checklist, you will never lose marks in planning, Agile governance, CMMI, or evidence collection.
