@@ -1,0 +1,194 @@
+===========================================
+         USER STORIES – COMPLETE SET
+  Project: Software Project Management Tool
+===========================================
+
+
+=========================================================
+               MEMBER A – CORE BACKEND
+Focus: Project creation, story tracking, persistence,
+       and basic data handling.
+=========================================================
+
+1. PRJ-001 – Create New Project
+As a project manager,
+I want to create a new project with title, description, and owner,
+So that I can manage related sprints and stories.
+Acceptance Criteria:
+- Reject blank titles.
+- Store project in JSON file.
+- Display project creation confirmation message.
+
+2. PRJ-002 – View All Projects
+As a team member,
+I want to view all available projects,
+So that I can select the one I’m working on.
+Acceptance Criteria:
+- Read data from JSON file.
+- Display formatted list with IDs and owners.
+
+3. STY-001 – Add User Story
+As a developer,
+I want to add a user story with title, description, and points,
+So that I can plan tasks efficiently.
+Acceptance Criteria:
+- Validate duplicate titles.
+- Save story under selected project.
+
+4. STY-002 – Edit / Update User Story
+As a project manager,
+I want to update a story’s details or points,
+So that I can adjust estimates as requirements evolve.
+Acceptance Criteria:
+- Update JSON record.
+- Track modified timestamp.
+
+5. STY-003 – Delete User Story
+As a project manager,
+I want to delete outdated stories,
+So that the backlog remains relevant.
+
+6. TSK-001 – Add Task to Story
+As a developer,
+I want to add tasks to a user story,
+So that I can break work into smaller chunks.
+
+7. TSK-002 – Mark Task Complete
+As a developer,
+I want to mark tasks complete,
+So that sprint progress updates automatically.
+
+8. PRJ-003 – Save / Load Project Data
+As a user,
+I want to save all changes and reload them later,
+So that project progress persists between sessions.
+
+9. PRJ-004 – Implement Data Validation and Error Handling
+As a system user,
+I want to have input validation and error handling across all project and story operations,
+So that invalid or incomplete data doesn’t corrupt stored information and users receive clear error messages.
+Acceptance Criteria:
+- Validate all inputs (e.g., empty titles, negative story points, invalid owners).
+- Raise structured exceptions with descriptive messages.
+- Log invalid entries into error_log.json.
+- Maintain consistent error responses for CLI and backend.
+
+
+
+=========================================================
+             MEMBER B – SPRINTER & VELOCITY
+Focus: Sprint lifecycle, planning, assignment,
+       and velocity calculations.
+=========================================================
+
+1. SPR-001 – Create Sprint
+As a project manager,
+I want to create new sprints with start/end dates and capacity,
+So that work can be planned systematically.
+
+2. SPR-002 – Assign Stories to Sprint
+As a scrum master,
+I want to add stories into a sprint,
+So that sprint planning reflects real workload.
+
+3. SPR-003 – Calculate Sprint Velocity
+As a project manager,
+I want to measure team velocity,
+So that I can predict delivery timelines.
+
+4. SPR-004 – View Sprint Summary
+As a developer,
+I want to view sprint details, stories, and progress,
+So that I can monitor status.
+
+5. SPR-005 – Generate Burndown Chart
+As a scrum master,
+I want to visualize sprint progress,
+So that I can detect schedule risks early.
+
+6. SPR-006 – Track Sprint Retrospective
+As a team,
+I want to log what went well and what didn’t,
+So that we can improve next sprint.
+
+7. SPR-007 – Manage Sprint Capacity
+As a project manager,
+I want to monitor member workload,
+So that no one is over-assigned.
+
+8. SPR-008 – Export Sprint Report
+As a project manager,
+I want to export sprint results to a report file,
+So that documentation and submission are easier.
+
+9. SPR-009 – Auto-Recalculate Velocity on Sprint Completion
+As a scrum master,
+I want to automatically recalculate team velocity after closing a sprint,
+So that the next sprint’s planning adjusts based on actual performance.
+Acceptance Criteria:
+- Trigger automatic velocity computation when sprint is marked “Completed”.
+- Store historical velocities in velocity_log.json.
+- Display message: "Sprint completed. Average team velocity: X points."
+
+
+
+=========================================================
+           MEMBER C – METRICS & TESTING ENGINE
+Focus: Software measurement, testing, symbolic & concolic
+       analysis, and metric reporting.
+=========================================================
+
+1. MET-001 – Calculate PERT
+As a project manager,
+I want to compute expected task time using PERT,
+So that I can estimate completion timelines accurately.
+
+2. MET-002 – Apply COCOMO I
+As a cost analyst,
+I want to estimate project effort and cost using COCOMO I,
+So that I can manage budget expectations.
+
+3. MET-003 – Apply COCOMO II
+As a cost analyst,
+I want to refine cost estimation using scale factors,
+So that accuracy improves over time.
+
+4. MET-004 – Compute EVM Metrics
+As a project manager,
+I want to measure EV, PV, AC, SPI, and CPI,
+So that schedule and cost performance are visible.
+
+5. TST-001 – Implement Black-Box Tests
+As a tester,
+I want to validate key modules using functional tests,
+So that the system meets user requirements.
+
+6. TST-002 – Implement White-Box Tests
+As a QA engineer,
+I want to achieve high branch coverage,
+So that internal logic is verified.
+
+7. SYM-001 – Perform Symbolic Execution
+As a researcher,
+I want to explore execution paths symbolically,
+So that I can identify edge-case conditions.
+
+8. CON-001 – Perform Concolic Testing
+As a researcher,
+I want to merge symbolic and concrete testing,
+So that hidden defects can be discovered automatically.
+
+9. MET-005 – Generate Combined Metrics Dashboard
+As a project manager,
+I want to view a combined dashboard of PERT, COCOMO, and EVM metrics,
+So that I can analyze project progress, cost, and efficiency in one place.
+Acceptance Criteria:
+- Read metric outputs from metrics/ folder.
+- Generate a summary dashboard (CLI or HTML report).
+- Include CPI, SPI, Expected Duration, and Effort Estimation.
+- Export dashboard to /docs/metrics/dashboard_report.html.
+
+
+=========================================================
+                 END OF USER STORIES
+=========================================================
