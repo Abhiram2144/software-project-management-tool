@@ -102,7 +102,30 @@ class ProjectManager:
         self.save_data()
         return project
 
-    
+    def list_projects(self) -> List[Dict[str, Any]]:
+        """Return a summary list of projects (id, title, owner, story_count)."""
+        out: List[Dict[str, Any]] = []
+        for p in self._data.get("projects", []):
+            out.append(
+                {
+                    "id": p.get("id"),
+                    "title": p.get("title"),
+                    "owner": p.get("owner"),
+                    "story_count": len(p.get("stories", [])),
+                }
+            )
+        return out
+
+    def _find_project(self, project_id: int) -> Optional[Dict[str, Any]]:
+        for p in self._data.get("projects", []):
+            if p.get("id") == project_id:
+                return p
+        return None
+
+    def _next_story_id(self, project: Dict[str, Any]) -> int:
+        ids = [s.get("id", 0) for s in project.get("stories", [])]
+        return max(ids, default=0) + 1
+
     def add_story_to_project(self, project_id: int, title: str, description: str, points: int) -> Dict[str, Any]:
         """Add a user story under the given project.
 
