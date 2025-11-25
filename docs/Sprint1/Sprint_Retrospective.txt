@@ -1,0 +1,67 @@
+
+=========================================================
+                                    SPRINT 1 RETROSPECTIVE
+=========================================================
+
+Sprint: 1
+Sprint end date: 2025-11-24
+Retrospective prepared: 2025-11-25
+
+**What Went Well**
+- **Completed Stories**: The team delivered the planned user stories for Sprint 1:
+  - Abhiram: `PRJ-001` (Create New Project), `PRJ-002` (View All Projects), `STY-001` (Add User Story).
+  - Charan: `SPR-001` (Create Sprint), `SPR-002` (Assign Stories to Sprint), `SPR-003` (Calculate Sprint Velocity).
+  - Roshan: `MET-001` (Calculate PERT), `MET-002` (COCOMO I), `MET-003` (COCOMO II).
+- **Persistence & Basic APIs**: Project and sprint persistence implemented under `data/` and exposed via the `ProjectManager` and `SprintManager` APIs enabling other modules to integrate.
+
+**What Didn't Go Well**
+- **Late Submissions**: Roshan and Charan missed the Sprint 1 deadline (24 Nov) and submitted on 25 Nov. This impacted review time and blocked earlier integration testing.
+- **Code Quality & Structure**: Several submitted modules are missing inline comments, docstrings, and clear module structure. This makes reviews slower and onboarding harder.
+- **Cyclomatic Complexity**: Multiple functions have high cyclomatic complexity; these functions need refactoring into smaller, single-responsibility functions to improve readability and testability.
+- **Insufficient Tests**: Some modules lack targeted unit tests that exercise edge cases and branches. Overall coverage must be improved.
+
+**Root Causes / Observations**
+- Developers did not allocate enough time for documentation and tests after implementing features.
+- No mandatory pre-merge checklist or CI gates were in place to enforce style, complexity, and test coverage.
+- No dedicated peer-review slot was reserved prior to the sprint end date.
+
+**Action Items (Concrete, Owner, Due Date)**
+1. **Refactor & Comment Roshan's Metric Modules** — Owner: Roshan — Due: 2025-12-01
+       - Add module-level docstrings, function docstrings, and inline comments explaining non-obvious logic.
+       - Break up functions whose cyclomatic complexity (CC) > 10 into smaller helper functions.
+       - Add type hints to public functions.
+       - Add unit tests (happy path and edge cases) for PERT and COCOMO functions.
+
+2. **Refactor & Structure Charan's Sprint Modules** — Owner: Charan — Due: 2025-12-01
+       - Improve structure in `src/sprint_manager` (clear separation of persistence, domain logic, and integrations).
+       - Add docstrings, input validation, and unit tests for `create_sprint`, `add_story_to_sprint`, and `calculate_velocity`.
+       - Reduce CC in functions flagged by the static analyzer; aim for CC <= 10 per function.
+
+3. **Establish a Minimal CI Pipeline** — Owner: Abhiram — Due: 2025-12-05
+       - Add GitHub Actions workflow to run `pytest --cov=src` and fail PRs with coverage < 85%.
+       - Run linters (`flake8`) and formatters (`black`) on push.
+       - Add a radon CC check and fail the build if new functions exceed CC threshold (configurable, suggested 12 for now).
+
+4. **Introduce a PR Checklist & Template** — Owner: Abhiram — Due: 2025-11-30
+       - Checklist items: docstrings added, tests added, CC measured and acceptable, `requirements.txt` updated (if any), and `README` or docs updated where applicable.
+
+5. **Add Targeted Unit Tests & Improve Coverage** — Owner: All contributors — Due: 2025-12-05
+       - Each contributor must add unit tests for their sprint 1 modules covering normal cases and edge cases.
+       - Aim for module-level coverage >= 85% before merging into `main`.
+
+6. **Schedule Peer Review Sessions** — Owner: Scrum Master (Charan) — Due: schedule by 2025-11-28
+       - Reserve 1–2 hours for code walkthroughs before the sprint end to catch early issues and avoid last-minute fixes.
+
+**Quality Gates (Required for next sprints)**
+- Every PR must pass automated tests and linters before it can be merged.
+- Add a `CHANGELOG.md` entry for each merged story describing the change briefly.
+- Enforce `black` formatting and `flake8` linting via CI.
+
+**Follow-up / Backlog Items**
+- Add a task to the backlog to implement `test_registry` for tracking test outcomes and historical velocities.
+- Create a task to generate a developer-facing `CONTRIBUTING.md` describing branch naming, PR checklist, and coding standards.
+
+**Final Notes**
+- The team completed all planned functional work for Sprint 1, but non-functional quality aspects (docs, tests, complexity) must be prioritized for Sprint 2. The action items above are intended to be small, verifiable tasks that improve maintainability and speed up future reviews.
+
+=========================================================
