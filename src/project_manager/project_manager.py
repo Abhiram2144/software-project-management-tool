@@ -327,5 +327,126 @@ class ProjectManager:
         # No story matched
         raise ValueError("Story not found")
 
+    def add_task_to_story(
+        self,
+        project_id: int,
+        story_id: int,
+        title: str,
+        assigned_to: Optional[str] = None,
+        estimated_hours: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """Add a task to a story, breaking the story into smaller chunks.
+
+        Acceptance criteria:
+        - Create a task record under the story's task list.
+        - Validate task title is non-blank.
+        - Track created and optional modified timestamps.
+        - Return the created task dict.
+
+        Raises ValueError if project, story not found, or validation fails.
+        """
+        project = self._find_project(project_id)
+        if project is None:
+            raise ValueError("Project not found")
+
+        story = None
+        for s in project.get("stories", []):
+            if s.get("id") == story_id:
+                story = s
+                break
+
+        if story is None:
+            raise ValueError("Story not found")
+
+        # Validate task title
+        task_title = (title or "").strip()
+        if not task_title:
+            raise ValueError("Task title cannot be blank")
+
+        # Multiple branching paths for cyclomatic complexity:
+        # 1. Check for duplicate task titles within the story
+        existing_task_titles = {t.get("title", "").lower() for t in story.get("tasks", [])}
+        if task_title.lower() in existing_task_titles:
+            raise ValueError("Task title already exists in story")
+
+        # 2. Process estimated hours with different branches
+        estimated = 0.0
+        if estimated_hours is not None:
+            if isinstance(estimated_hours, str):
+                # branch: string input must be numeric
+                if estimated_hours.strip().replace(".", "", 1).isdigit() or estimated_hours.strip().startswith("-"):
+                    try:
+                        estimated = float(estimated_hours)
+                    except Exception:
+                        raise ValueError("Estimated hours must be numeric")
+                else:
+                    raise ValueError("Estimated hours must be numeric")
+            else:
+                try:
+                    estimated = float(estimated_hours)
+                except Exception:
+                    raise ValueError("Estimated hours must be numeric")
+
+            # branch: reject negative hours
+            if estimated < 0:
+                raise ValueError("Estimated hours cannot be negative")
+
+            # branch: warn on extremely large hours
+            if estimated > 1000:
+                estimated = 1000
+
+        # 3. Process assigned_to with multiple branches
+        assignee = None
+        if assigned_to is not None:
+            assignee_str = (assigned_to or "").strip()
+            if assignee_str:
+                # branch: assignee exists
+                assignee = assignee_str
+            else:
+                # branch: assignee is blank string (no assignment)
+                assignee = None
+
+        # 4. Generate task ID (next available)
+        task_id = 1
+        existing_ids = [t.get("id", 0) for t in story.get("tasks", [])]
+        if existing_ids:
+            task_id = max(existing_ids) + 1
+
+        # 5. Create task record with optional priority heuristics
+        task = {
+            "id": task_id,
+            "title": task_title,
+            "assigned_to": assignee,
+            "estimated_hours": estimated,
+            "status": "open",  # default status
+            "created_at": _now_iso(),
+            "modified_at": _now_iso(),
+        }
+
+        # 6. Priority assignment branch: infer from title keywords
+        title_lower = task_title.lower()
+        if "urgent" in title_lower or "critical" in title_lower:
+            task["priority"] = "high"
+        elif "low" in title_lower or "nice-to-have" in title_lower:
+            task["priority"] = "low"
+        else:
+            task["priority"] = "medium"
+
+        # 7. If assignee exists, set initial status to 'in-progress'
+        if assignee:
+            task["status"] = "in-progress"
+
+        # 8. If no estimated hours, mark as 'unestimated'
+        if estimated == 0.0:
+            task.setdefault("tags", []).append("unestimated")
+
+        # Add task to story and update timestamps
+        story.setdefault("tasks", []).append(task)
+        story["modified_at"] = _now_iso()
+        project["modified_at"] = _now_iso()
+        self.save_data()
+
+        return task
+
 
 __all__ = ["ProjectManager"]
