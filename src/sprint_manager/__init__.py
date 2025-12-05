@@ -100,7 +100,41 @@ class SprintManager:
                 return s
         return None
 
-    
-    
+    def add_story_to_sprint(self, project_id: int, story_id: int, sprint_id: int) -> Dict[str, Any]:
+        """Assign a story (by project_id + story_id) to a sprint.
+
+        The story will be annotated with `sprint_id` and the sprint will record
+        a reference tuple. Raises ValueError if sprint or story not found.
+        """
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        # verify story exists in ProjectManager
+        try:
+            story = self.pm.get_story(project_id, story_id)
+        except Exception:
+            raise ValueError("Story not found")
+
+        # ensure not already added
+        for ref in sprint.get("stories", []):
+            if ref.get("project_id") == project_id and ref.get("story_id") == story_id:
+                raise ValueError("Story already in sprint")
+
+        sprint.setdefault("stories", []).append({"project_id": project_id, "story_id": story_id})
+        sprint["modified_at"] = _now_iso()
+
+        # annotate story with sprint_id (non-destructive addition)
+        proj = self.pm._find_project(project_id)
+        for s in proj.get("stories", []):
+            if s.get("id") == story_id:
+                s["sprint_id"] = sprint_id
+                s["modified_at"] = _now_iso()
+                break
+
+        self.pm.save_data()
+        self.save_data()
+        return {"project_id": project_id, "story_id": story_id, "sprint_id": sprint_id}
+
 
 __all__ = ["SprintManager"]
