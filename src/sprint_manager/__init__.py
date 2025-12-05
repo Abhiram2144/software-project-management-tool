@@ -453,5 +453,238 @@ class SprintManager:
         }
         return result
 
+    def track_sprint_retrospective(self, sprint_id: int, went_well: List[str], 
+                                   went_poorly: List[str], improvements: List[str]) -> Dict[str, Any]:
+        """Log retrospective feedback for a completed sprint.
+
+        Tracks what went well, what went poorly, and actionable improvements.
+        This method uses many branches and nested conditionals to increase
+        cyclomatic complexity while validating and organizing retrospective data.
+        """
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        # defensive list initialization
+        well_items = []
+        if went_well is not None:
+            try:
+                if isinstance(went_well, list):
+                    well_items = went_well
+                else:
+                    well_items = [str(went_well)]
+            except Exception:
+                well_items = []
+        else:
+            well_items = []
+
+        poor_items = []
+        if went_poorly is not None:
+            try:
+                if isinstance(went_poorly, list):
+                    poor_items = went_poorly
+                else:
+                    poor_items = [str(went_poorly)]
+            except Exception:
+                poor_items = []
+        else:
+            poor_items = []
+
+        improve_items = []
+        if improvements is not None:
+            try:
+                if isinstance(improvements, list):
+                    improve_items = improvements
+                else:
+                    improve_items = [str(improvements)]
+            except Exception:
+                improve_items = []
+        else:
+            improve_items = []
+
+        # filter empty/whitespace entries with multiple branches
+        cleaned_well: List[str] = []
+        for item in well_items:
+            try:
+                cleaned = str(item).strip()
+                if cleaned:
+                    cleaned_well.append(cleaned)
+                else:
+                    # track empty items separately
+                    pass
+            except Exception:
+                pass
+
+        cleaned_poor: List[str] = []
+        for item in poor_items:
+            try:
+                cleaned = str(item).strip()
+                if cleaned:
+                    cleaned_poor.append(cleaned)
+                else:
+                    pass
+            except Exception:
+                pass
+
+        cleaned_improve: List[str] = []
+        for item in improve_items:
+            try:
+                cleaned = str(item).strip()
+                if cleaned:
+                    cleaned_improve.append(cleaned)
+                else:
+                    pass
+            except Exception:
+                pass
+
+        # categorize sentiment and priority
+        sentiment = "neutral"
+        if cleaned_well and cleaned_poor:
+            # both positive and negative feedback
+            well_count = len(cleaned_well)
+            poor_count = len(cleaned_poor)
+            if well_count > poor_count:
+                sentiment = "positive"
+            elif poor_count > well_count:
+                sentiment = "negative"
+            else:
+                sentiment = "mixed"
+        else:
+            # edge cases
+            if cleaned_well and not cleaned_poor:
+                sentiment = "very_positive"
+            elif cleaned_poor and not cleaned_well:
+                sentiment = "very_negative"
+            else:
+                # both empty
+                sentiment = "no_feedback"
+
+        # compute improvement priority
+        priority = "low"
+        if cleaned_improve:
+            imp_count = len(cleaned_improve)
+            if imp_count >= 5:
+                priority = "critical"
+            elif imp_count >= 3:
+                priority = "high"
+            elif imp_count >= 1:
+                priority = "medium"
+            else:
+                priority = "low"
+        else:
+            # no improvements provided
+            if cleaned_poor:
+                # but there were problems
+                priority = "needs_planning"
+            else:
+                priority = "none"
+
+        # validate sprint completion state
+        sprint_status = "unknown"
+        try:
+            sd = datetime.fromisoformat(sprint.get("start_date"))
+            ed = datetime.fromisoformat(sprint.get("end_date"))
+            today = datetime.utcnow()
+            if today < sd:
+                sprint_status = "not_started"
+            elif today > ed:
+                sprint_status = "completed"
+            else:
+                sprint_status = "in_progress"
+        except Exception:
+            sprint_status = "invalid_dates"
+
+        # compute team health based on feedback balance
+        team_health = 50  # neutral baseline
+        if cleaned_well:
+            team_health += min(len(cleaned_well) * 10, 25)
+        if cleaned_poor:
+            team_health -= min(len(cleaned_poor) * 8, 25)
+        if cleaned_improve:
+            team_health += min(len(cleaned_improve) * 5, 15)
+        
+        # clamp health between 0 and 100
+        try:
+            team_health = max(0, min(team_health, 100))
+        except Exception:
+            team_health = 50
+
+        # build retrospective record
+        retrospective = {
+            "sprint_id": sprint_id,
+            "went_well": cleaned_well,
+            "went_poorly": cleaned_poor,
+            "improvements": cleaned_improve,
+            "sentiment": sentiment,
+            "priority": priority,
+            "sprint_status": sprint_status,
+            "team_health": team_health,
+            "logged_at": _now_iso(),
+        }
+
+        # store retrospective in sprint data
+        if "retrospectives" not in sprint:
+            sprint["retrospectives"] = []
+        
+        # check for duplicates or overwrites
+        existing_retros = sprint.get("retrospectives", [])
+        if existing_retros:
+            # if overwriting, mark as superseded
+            for retro in existing_retros:
+                try:
+                    retro["superseded"] = True
+                except Exception:
+                    pass
+
+        sprint["retrospectives"].append(retrospective)
+        sprint["modified_at"] = _now_iso()
+
+        # compute aggregate metrics across all retrospectives
+        all_retros = sprint.get("retrospectives", [])
+        total_feedback_items = 0
+        total_well = 0
+        total_poor = 0
+        total_improve = 0
+        health_scores = []
+
+        for retro in all_retros:
+            try:
+                if not retro.get("superseded", False):
+                    total_well += len(retro.get("went_well", []))
+                    total_poor += len(retro.get("went_poorly", []))
+                    total_improve += len(retro.get("improvements", []))
+                    h = retro.get("team_health", 50)
+                    if isinstance(h, (int, float)):
+                        health_scores.append(float(h))
+            except Exception:
+                pass
+
+        total_feedback_items = total_well + total_poor + total_improve
+
+        # compute average health
+        avg_health = 50.0
+        if health_scores:
+            try:
+                avg_health = sum(health_scores) / len(health_scores)
+            except Exception:
+                avg_health = 50.0
+
+        # save to persistent storage
+        self.save_data()
+
+        # return comprehensive retrospective result
+        return {
+            "sprint_id": sprint_id,
+            "retrospective": retrospective,
+            "aggregate_metrics": {
+                "total_well_items": total_well,
+                "total_poorly_items": total_poor,
+                "total_improvement_items": total_improve,
+                "total_feedback_items": total_feedback_items,
+                "average_team_health": round(avg_health, 2),
+            },
+            "message": f"Retrospective logged for sprint {sprint_id}",
+        }
+
 
 __all__ = ["SprintManager"]
