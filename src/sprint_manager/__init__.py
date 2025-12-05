@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from src.project_manager import ProjectManager
+from src.project_manager.project_manager import ProjectManager
 
 
 def _now_iso() -> str:

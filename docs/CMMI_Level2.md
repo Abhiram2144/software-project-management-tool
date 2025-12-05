@@ -290,6 +290,61 @@ Retrospective prepared: 2025-11-25
 **Final Notes**
 - The team completed the planned functional work for Sprint 1, but non-functional quality aspects (docs, tests, complexity) must be prioritized for Sprint 2. The action items above are intended to be small, verifiable tasks that improve maintainability and speed up future reviews.
 
+---
+
+## 13. Sprint 2 — Completion & Retrospective
+
+Sprint: 2
+
+Sprint end date: 2025-12-05
+
+Retrospective prepared: 2025-12-05
+
+Sprint objective
+- Implement quality improvements (docstrings, input validation, tests) and finalize behavior changes introduced in Sprint 1 (archive/delete semantics, task creation).
+
+Key outcomes (Sprint 2)
+- Added docstrings and input validation to multiple modules; improved `ProjectManager` with `edit_story`, `delete_story`, and `add_task_to_story` implementations.
+- Created `docs/Sprint2/Sprint_Retrospective.txt` capturing Sprint 2 findings and action items.
+- CI baseline work started (draft workflow on `ci/setup` branch) and quality gates defined for next sprint.
+
+What Went Well
+- Non-functional work received attention: documentation and some validation were added across the codebase.
+- New story and task APIs implemented and available for integration and testing.
+- Team awareness of complexity and coverage goals increased; action items were created to address gaps.
+
+What Didn't Go Well
+- Unit tests still lag behind implementation; many new branches and edge cases remain untested.
+- Some behavioral changes (soft-delete/archive) require API documentation and explicit migration notes.
+- CI workflow is draft-level and needs finalization and enforcement on PRs.
+
+Action Items (Concrete, Owner, Due Date)
+1. **Add Missing Unit Tests for Story & Task Methods** — Owner: All contributors — Due: 2025-12-12
+	- Cover `edit_story` branches, `delete_story` archive and cascade behaviors, and `add_task_to_story` edge cases.
+
+2. **Document Soft-Delete / Archive Behavior** — Owner: Abhiram — Due: 2025-12-09
+	- Update `docs/` and public docstrings to describe archived vs deleted story semantics.
+
+3. **Finalize CI & Quality Gates** — Owner: Abhiram — Due: 2025-12-12
+	- Merge and enable GitHub Actions to run `pytest --cov=src`, `flake8`, `black --check`, and `radon cc` on PRs.
+
+4. **Refactor High-CC Functions** — Owner: Roshan & Charan — Due: 2025-12-15
+	- Break up functions with CC > 12 and add tests to cover helper functions.
+
+5. **Enforce PR Checklist and Review Window** — Owner: Charan — Due: 2025-12-08
+	- Require reviewers and a short review window before merges.
+
+Quality Gates (Sprint 3 prerequisites)
+- All new functionality must be accompanied by unit tests covering relevant branches and edge cases.
+- Coverage and CC checks must be active in CI for PR blocking.
+
+Follow-up / Backlog Items
+- Create `CONTRIBUTING.md` and `CHANGELOG.md` (Owner: Abhiram) — Due: 2025-12-10
+- Implement `test_registry` for tracking test outcomes and historical velocities (Owner: Roshan) — Due: 2026-01-05
+
+Final Notes
+- Sprint 2 closed several important gaps but made clear the priority for Sprint 3 is tests, CI stabilization, and targeted refactoring to reduce complexity while keeping the implemented features intact.
+
 
 
 
