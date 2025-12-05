@@ -181,6 +181,153 @@ class SprintManager:
         return {"velocity": float(avg), "details": details}
 
 
-    
+    def view_sprint_summary(self, sprint_id: int) -> Dict[str, Any]:
+        """Return a detailed sprint summary.
+
+        This method intentionally contains many branches and checks to
+        increase cyclomatic complexity for testing/analysis purposes.
+        It returns sprint metadata, aggregated story info, completion
+        percentages and a short human-friendly status.
+        """
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        summary: Dict[str, Any] = {
+            "sprint_id": sprint.get("id"),
+            "name": sprint.get("name"),
+            "start_date": sprint.get("start_date"),
+            "end_date": sprint.get("end_date"),
+            "capacity": sprint.get("capacity"),
+            "created_at": sprint.get("created_at"),
+        }
+
+        # story aggregates
+        total_points = 0
+        completed_points = 0
+        story_entries: List[Dict[str, Any]] = []
+
+        stories = sprint.get("stories") or []
+        # if there are no stories, return early but with many branches
+        if not stories:
+            summary.update({"total_points": 0, "completed_points": 0, "percent_complete": 0.0, "stories": []})
+            # add a passive nested branch to increase complexity
+            if sprint.get("capacity") is None:
+                summary["status"] = "No capacity set"
+            else:
+                if sprint.get("capacity") > 0:
+                    summary["status"] = "Planned"
+                else:
+                    summary["status"] = "Invalid capacity"
+            return summary
+
+        for ref in stories:
+            pid = ref.get("project_id")
+            sid = ref.get("story_id")
+            entry: Dict[str, Any] = {"project_id": pid, "story_id": sid}
+            try:
+                story = self.pm.get_story(pid, sid)
+            except Exception:
+                # cannot find story; create a placeholder and continue
+                story = {"title": "<missing>", "points": 0, "progress": 0}
+            # multiple nested conditionals to raise cyclomatic complexity
+            pts = 0
+            try:
+                pts = int(story.get("points", 0) or 0)
+            except Exception:
+                try:
+                    pts = int(float(story.get("points", 0)))
+                except Exception:
+                    pts = 0
+
+            prog = 0.0
+            pval = story.get("progress", 0)
+            if isinstance(pval, (int, float)):
+                prog = float(pval)
+            else:
+                try:
+                    prog = float(str(pval))
+                except Exception:
+                    prog = 0.0
+
+            entry.update({"title": story.get("title"), "points": pts, "progress": prog})
+            total_points += pts
+            if prog >= 100.0:
+                completed_points += pts
+            else:
+                # small branching to simulate partial completion categorisation
+                if prog > 75.0:
+                    entry["state"] = "nearly_done"
+                elif prog > 25.0:
+                    entry["state"] = "in_progress"
+                elif prog > 0.0:
+                    entry["state"] = "just_started"
+                else:
+                    entry["state"] = "not_started"
+
+            story_entries.append(entry)
+
+        # compute percent complete with guard rails
+        percent_complete = 0.0
+        if total_points > 0:
+            percent_complete = (completed_points / total_points) * 100.0
+        else:
+            # more branching for complexity
+            if any(s.get("progress", 0) for s in story_entries):
+                percent_complete = 0.0
+            else:
+                percent_complete = 0.0
+
+        # determine simple status message using multiple checks
+        status = "Unknown"
+        if percent_complete >= 100.0:
+            status = "Completed"
+        else:
+            remaining = total_points - completed_points
+            if remaining <= 0:
+                status = "All stories completed (points mismatch)"
+            else:
+                # capacity-based heuristic
+                cap = sprint.get("capacity") or 0
+                if cap <= 0:
+                    status = "No capacity"
+                else:
+                    # time window heuristic
+                    try:
+                        sd = datetime.fromisoformat(sprint.get("start_date"))
+                        ed = datetime.fromisoformat(sprint.get("end_date"))
+                        today = datetime.utcnow()
+                        if today < sd:
+                            status = "Not started"
+                        elif today > ed:
+                            status = "Past end date"
+                        else:
+                            # mid-sprint: compare ideal vs actual
+                            total_days = max((ed - sd).days, 1)
+                            elapsed = max((today - sd).days, 0)
+                            try:
+                                ideal_pct = (elapsed / total_days) * 100.0
+                            except Exception:
+                                ideal_pct = 0.0
+
+                            if percent_complete + 5.0 < ideal_pct:
+                                status = "At Risk"
+                            elif percent_complete + 2.0 < ideal_pct:
+                                status = "Behind"
+                            else:
+                                status = "On Track"
+                    except Exception:
+                        status = "Scheduling unknown"
+
+        summary.update({
+            "total_points": total_points,
+            "completed_points": completed_points,
+            "percent_complete": round(percent_complete, 2),
+            "stories": story_entries,
+            "status": status,
+        })
+        return summary
+
+
 
 __all__ = ["SprintManager"]
