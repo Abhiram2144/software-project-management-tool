@@ -1,0 +1,54 @@
+=========================================================
+                                    SPRINT 2 RETROSPECTIVE
+=========================================================
+
+Sprint: 2
+Sprint end date: 2025-12-05
+Retrospective prepared: 2025-12-05
+
+**Sprint Goal**
+- Deliver refactor and quality-improvement tasks identified in Sprint 1, and complete remaining backlog items assigned for Sprint 2.
+
+**What Went Well**
+- Team completed several non-functional tasks: added docstrings and basic input validation across modules.
+- `ProjectManager` enhancements (edit/delete story, add task) were implemented and pushed as feature branches.
+- Sprint Manager received improvements for velocity calculation and basic persistence.
+- CI baseline work was started: a draft GitHub Actions workflow exists in the repo (branch `ci/setup`) and runs tests in CI.
+
+**What Didn't Go Well**
+- Tests still do not cover many edge cases; some branches added to increase cyclomatic complexity lack accompanying unit tests.
+- Some refactors introduced behavior changes (soft-delete vs hard-delete) that require documentation and reviewer attention.
+- Late PR reviews delayed merging; the team still needs a consistent pre-merge checklist enforcement.
+
+**Root Causes / Observations**
+- The team focused on implementing features and complexity targets but under-allocated time for tests and documentation.
+- Communication gaps during the sprint resulted in overlapping edits and merge conflicts that required manual resolution.
+
+**Action Items (Concrete, Owner, Due Date)**
+1. **Add Missing Unit Tests for Story & Task Methods** — Owner: All contributors — Due: 2025-12-12
+   - Add tests for: `edit_story` branches (title duplicate, long description truncation, points edge cases), `delete_story` (soft-delete, reject delete-with-tasks), `add_task_to_story` (priority inference, estimated_hours parsing, duplicate task prevention).
+
+2. **Document Soft-Delete / Archive Behavior** — Owner: Abhiram — Due: 2025-12-09
+   - Update `docs/` and method docstrings to clearly describe when a story is archived vs hard-deleted and the expected API errors for delete-with-tasks.
+
+3. **Stabilize CI & Add Quality Gates** — Owner: Abhiram — Due: 2025-12-12
+   - Finalize GitHub Actions to run `pytest --cov=src`, `flake8`, `black --check`, and `radon cc` and fail PRs on coverage < 85% or CC violations.
+
+4. **Enforce PR Checklist and Pre-merge Review Window** — Owner: Charan (Scrum Master) — Due: 2025-12-08
+   - Require at least one reviewer and a 24-hour review window for non-critical changes.
+
+5. **Refactor High-CC Functions into Smaller Units** — Owner: Roshan & Charan — Due: 2025-12-15
+   - Break functions with CC > 12 into helper functions; add unit tests for each helper.
+
+**Quality Gates (Sprint 3 prerequisites)**
+- All PRs must include tests covering new branches and maintain >= 85% coverage for affected modules.
+- Functions with CC > 12 must include justification in PR description.
+
+**Follow-up Items**
+- Create `CONTRIBUTING.md` describing branch naming, PR checklist and reviewers — Owner: Abhiram — Due: 2025-12-10
+- Implement a `test_registry` to capture test outcomes and track historical velocities — Owner: Roshan — Due: 2026-01-05
+
+**Final Notes**
+- Sprint 2 improved the repository's capabilities and introduced important behaviors (archive/delete, task creation). The team's focus for Sprint 3 should be test coverage and refactoring to reduce complexity while keeping the implemented feature set.
+
+=========================================================
