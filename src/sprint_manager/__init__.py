@@ -135,6 +135,52 @@ class SprintManager:
         self.pm.save_data()
         self.save_data()
         return {"project_id": project_id, "story_id": story_id, "sprint_id": sprint_id}
+    
+    def calculate_velocity(self, sprint_id: Optional[int] = None, last_n: int = 3) -> Dict[str, Any]:
+        """Compute velocity (completed story points) per sprint.
 
+        If `sprint_id` provided returns metrics for that sprint. Otherwise,
+        returns average velocity across the last `last_n` sprints.
+        """
+        sprints = self._data.get("sprints", [])
+        if not sprints:
+            return {"velocity": 0.0, "details": []}
+
+        # helper to compute completed points for a sprint
+        def sprint_completed_points(sprint: Dict[str, Any]) -> int:
+            total = 0
+            for ref in sprint.get("stories", []):
+                try:
+                    story = self.pm.get_story(ref.get("project_id"), ref.get("story_id"))
+                    if float(story.get("progress", 0.0)) >= 100.0:
+                        total += int(story.get("points", 0))
+                except Exception:
+                    continue
+            return total
+
+        if sprint_id is not None:
+            sprint = self._find_sprint(sprint_id)
+            if sprint is None:
+                raise ValueError("Sprint not found")
+            points = sprint_completed_points(sprint)
+            return {"velocity": float(points), "details": [{"sprint_id": sprint_id, "completed_points": points}]}
+
+        # otherwise compute for last_n sprints by id order
+        sorted_sprints = sorted(sprints, key=lambda x: x.get("id"))
+        recent = sorted_sprints[-last_n:]
+        details = []
+        for sp in recent:
+            pts = sprint_completed_points(sp)
+            details.append({"sprint_id": sp.get("id"), "completed_points": pts})
+
+        if details:
+            avg = sum(d["completed_points"] for d in details) / len(details)
+        else:
+            avg = 0.0
+
+        return {"velocity": float(avg), "details": details}
+
+
+    
 
 __all__ = ["SprintManager"]
