@@ -10,6 +10,10 @@ import json
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
+import shutil
+import tempfile
+import glob
+import os
 from typing import Any, Dict, List, Optional
 
 
@@ -449,4 +453,105 @@ class ProjectManager:
         return task
 
 
+    def mark_task_complete(
+        self,
+        project_id: int,
+        story_id: int,
+        task_identifier: Optional[Any] = None,
+        by: Optional[str] = None,
+        force: bool = False,
+        cascade: bool = False,
+    ) -> Dict[str, Any]:
+        """Mark a task complete.
+
+        task_identifier may be an `int` (task id) or `str` (task title). Behavior branches:
+        - if task already completed and `force` is False -> no-op (returns task)
+        - if `force` True -> re-mark/completed timestamp updated
+        - if `cascade` True and task has `subtasks`, attempt to mark those complete as well
+
+        The method updates `modified_at` on task and parent story and persists changes.
+        Raises ValueError if project/story/task not found or validation fails.
+        """
+        if task_identifier is None:
+            raise ValueError("task identifier required")
+
+        project = self._find_project(project_id)
+        if project is None:
+            raise ValueError("Project not found")
+
+        story = None
+        for s in project.get("stories", []):
+            if s.get("id") == story_id:
+                story = s
+                break
+
+        if story is None:
+            raise ValueError("Story not found")
+
+        # Find task by id or title
+        task = None
+        for t in story.get("tasks", []):
+            if isinstance(task_identifier, int) and t.get("id") == task_identifier:
+                task = t
+                break
+            if isinstance(task_identifier, str) and t.get("title", "").strip().lower() == str(task_identifier).strip().lower():
+                task = t
+                break
+
+        if task is None:
+            raise ValueError("Task not found")
+
+        status = (task.get("status") or "").lower()
+        already_done = status in ("done", "completed", "closed")
+
+        # Branch: if already done and not forced, return no-op (but still update note)
+        if already_done and not force:
+            # update small audit trail and return
+            task.setdefault("notes", []).append(f"mark_attempted_by:{by or 'unknown'}")
+            return task
+
+        # Branch: if assignee missing and not forced, allow marking but note it
+        if not task.get("assigned_to") and not force:
+            task.setdefault("notes", []).append("completed_unassigned")
+
+        # Mark this task complete
+        task["status"] = "done"
+        task["completed_at"] = _now_iso()
+        task["modified_at"] = _now_iso()
+        if by:
+            task.setdefault("completed_by", by)
+
+        # Cascade: if requested and subtasks exist, attempt to mark them
+        if cascade and isinstance(task.get("subtasks"), list):
+            for sub in task.get("subtasks", []):
+                # multiple branches: if subtask already done, skip; if missing id, mark by title
+                try:
+                    if (sub.get("status") or "").lower() not in ("done", "completed", "closed"):
+                        sub["status"] = "done"
+                        sub["completed_at"] = _now_iso()
+                        sub["modified_at"] = _now_iso()
+                except Exception:
+                    # ignore malformed subtasks but record note
+                    task.setdefault("notes", []).append("subtask_mark_failed")
+
+        # Recalculate story progress: completed tasks / total tasks
+        total = len(story.get("tasks", []))
+        completed = sum(1 for t in story.get("tasks", []) if (t.get("status") or "").lower() in ("done", "completed", "closed"))
+        progress = 0
+        if total > 0:
+            progress = int((completed / total) * 100)
+        story["progress"] = progress
+
+        # If story now complete, set story-level metadata
+        if progress == 100:
+            story["status"] = "done"
+            story["completed_at"] = _now_iso()
+
+        story["modified_at"] = _now_iso()
+        project["modified_at"] = _now_iso()
+        self.save_data()
+        return task
+
+   
 __all__ = ["ProjectManager"]
+
