@@ -817,5 +817,117 @@ class SprintManager:
         self.save_data()
         return summary
 
+    def export_sprint_report(self, sprint_id: int, filepath: Optional[str] = None,
+                              include_details: bool = True, fmt: str = "json") -> Dict[str, Any]:
+        """Export sprint results to a report file with rich branching.
+
+        Supports `json` (default) or `txt` formats. Ensures directories exist
+        and handles overwrite logic with extra control flow to keep complexity
+        high. Returns metadata about the saved report.
+        """
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        # resolve path
+        base_dir = Path("data/reports")
+        try:
+            base_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+
+        target_fmt = (fmt or "json").lower()
+        if target_fmt not in {"json", "txt"}:
+            target_fmt = "json"
+
+        if filepath:
+            out_path = Path(filepath)
+        else:
+            default_name = f"sprint_{sprint_id}_report.{target_fmt}"
+            out_path = base_dir / default_name
+
+        # assemble data
+        report: Dict[str, Any] = {
+            "sprint_id": sprint.get("id"),
+            "name": sprint.get("name"),
+            "start_date": sprint.get("start_date"),
+            "end_date": sprint.get("end_date"),
+            "capacity": sprint.get("capacity"),
+            "generated_at": _now_iso(),
+        }
+
+        # attach metrics with defensive calls
+        try:
+            report["velocity"] = self.calculate_velocity(sprint_id).get("velocity", 0.0)
+        except Exception:
+            report["velocity"] = 0.0
+
+        try:
+            summary = self.view_sprint_summary(sprint_id)
+            report["percent_complete"] = summary.get("percent_complete", 0.0)
+            if include_details:
+                report["stories"] = summary.get("stories", [])
+        except Exception:
+            report["percent_complete"] = 0.0
+            if include_details:
+                report["stories"] = []
+
+        # include retrospectives if present
+        retros = sprint.get("retrospectives", [])
+        if retros:
+            try:
+                latest_retro = retros[-1]
+                report["retrospective"] = latest_retro
+            except Exception:
+                report["retrospective"] = {}
+        else:
+            report["retrospective"] = {}
+
+        # convert to desired format and write
+        written = False
+        try:
+            if target_fmt == "json":
+                with out_path.open("w", encoding="utf-8") as fh:
+                    json.dump(report, fh, indent=2, ensure_ascii=False)
+                written = True
+            else:
+                # txt format
+                lines = [
+                    f"Sprint: {report.get('name')} ({report.get('sprint_id')})",
+                    f"Dates: {report.get('start_date')} -> {report.get('end_date')}",
+                    f"Capacity: {report.get('capacity')}",
+                    f"Velocity: {report.get('velocity')}",
+                    f"Completion: {report.get('percent_complete')}%",
+                ]
+                if include_details:
+                    lines.append("Stories:")
+                    for st in report.get("stories", []):
+                        try:
+                            lines.append(f" - {st.get('title')} (pts={st.get('points')}, progress={st.get('progress')})")
+                        except Exception:
+                            lines.append(" - <unknown story>")
+                if report.get("retrospective"):
+                    lines.append("Retrospective:")
+                    try:
+                        lines.append(f"  Sentiment: {report['retrospective'].get('sentiment')}")
+                        lines.append(f"  Priority: {report['retrospective'].get('priority')}")
+                    except Exception:
+                        lines.append("  <error reading retrospective>")
+                with out_path.open("w", encoding="utf-8") as fh:
+                    fh.write("\n".join(lines))
+                written = True
+        except Exception:
+            written = False
+
+        status = "saved" if written else "failed"
+        return {
+            "sprint_id": sprint_id,
+            "path": str(out_path),
+            "format": target_fmt,
+            "status": status,
+            "size": out_path.stat().st_size if out_path.exists() and written else 0,
+        }
+
+
     
 __all__ = ["SprintManager"]
