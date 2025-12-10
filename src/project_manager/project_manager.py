@@ -552,6 +552,73 @@ class ProjectManager:
         self.save_data()
         return task
 
-   
+    def save_project_data(self, backup: bool = True) -> str:
+        """Persist current project store to disk with optional backup.
+
+        Returns the path to the saved file. Creates a timestamped backup if `backup` True.
+        Raises IOError on failure.
+        """
+        dest = str(self.data_file)
+
+        # Branch: ensure parent directory exists
+        if not self.data_file.parent.exists():
+            try:
+                self.data_file.parent.mkdir(parents=True, exist_ok=True)
+            except Exception as exc:
+                raise IOError(f"Failed to create data directory: {exc}")
+
+        # Create backup if requested and the file exists
+        if backup and self.data_file.exists():
+            try:
+                ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+                bak_name = f"{dest}.bak.{ts}"
+                shutil.copy2(dest, bak_name)
+            except Exception:
+                # non-fatal: if backup fails, continue but record note in data
+                self._data.setdefault("_notes", []).append("backup_failed")
+
+        # Atomic write: write to temp file then move
+        fd, tmp_path = tempfile.mkstemp(dir=str(self.data_file.parent))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(self._data, fh, indent=2, ensure_ascii=False)
+            # move into place
+            shutil.move(tmp_path, dest)
+        except Exception as exc:
+            # attempt to remove temp file if it exists
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass
+            raise IOError(f"Failed to save data: {exc}")
+
+        return dest
+
+    def load_project_data(self, restore_backup: bool = False) -> Dict[str, Any]:
+        """Load project data from disk. If file missing, returns current in-memory data.
+
+        If `restore_backup` is True and the main file is corrupt, attempt to restore the latest backup.
+        """
+        try:
+            data = self.load_data()
+            return data
+        except Exception:
+            # load_data already handles many cases, but for safety, attempt restore
+            if restore_backup:
+                pattern = f"{str(self.data_file)}.bak.*"
+                bak_files = sorted(glob.glob(pattern), reverse=True)
+                for bak in bak_files:
+                    try:
+                        with open(bak, "r", encoding="utf-8") as fh:
+                            self._data = json.load(fh)
+                        # write restored data to primary path
+                        self.save_data()
+                        return self._data
+                    except Exception:
+                        continue
+            # re-raise as ValueError to indicate load failure
+            raise ValueError("Failed to load project data and no valid backup available")
+
 __all__ = ["ProjectManager"]
 
