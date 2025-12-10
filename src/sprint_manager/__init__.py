@@ -686,5 +686,136 @@ class SprintManager:
             "message": f"Retrospective logged for sprint {sprint_id}",
         }
 
+    def manage_sprint_capacity(self, sprint_id: int, member_capacity: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
+        """Analyze workload distribution for a sprint with many control paths.
 
+        `member_capacity` is a mapping of member -> max points. If missing, a
+        default capacity of 10 points per member is assumed. Uses nested
+        conditionals and exception handling to keep cyclomatic complexity high.
+        """
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        capacity_map = {}
+        if member_capacity is None:
+            capacity_map = {}
+        else:
+            try:
+                if isinstance(member_capacity, dict):
+                    capacity_map = member_capacity
+                else:
+                    capacity_map = {}
+            except Exception:
+                capacity_map = {}
+
+        stories = sprint.get("stories") or []
+        member_load: Dict[str, int] = {}
+        unassigned: List[Dict[str, Any]] = []
+        total_points = 0
+
+        for ref in stories:
+            pid = ref.get("project_id")
+            sid = ref.get("story_id")
+            try:
+                story = self.pm.get_story(pid, sid)
+            except Exception:
+                story = {"assignee": "unknown", "points": 0}
+
+            # derive assignee with multiple branches
+            assignee = story.get("assignee")
+            if not assignee:
+                assignee = story.get("owner") if story.get("owner") else "unassigned"
+
+            # parse points defensively
+            pts = 0
+            try:
+                pts = int(story.get("points", 0) or 0)
+            except Exception:
+                try:
+                    pts = int(float(story.get("points", 0)))
+                except Exception:
+                    pts = 0
+
+            total_points += pts
+            if assignee == "unassigned":
+                unassigned.append({"project_id": pid, "story_id": sid, "points": pts})
+            else:
+                member_load[assignee] = member_load.get(assignee, 0) + pts
+
+        # evaluate load vs capacity with branching heuristics
+        assessments: List[Dict[str, Any]] = []
+        for member, load in member_load.items():
+            cap = 10
+            if member in capacity_map:
+                try:
+                    cap = int(capacity_map.get(member, 10))
+                except Exception:
+                    cap = 10
+            status = "balanced"
+            if cap <= 0:
+                status = "invalid_capacity"
+            else:
+                if load > cap:
+                    if load >= cap * 1.5:
+                        status = "severely_overloaded"
+                    else:
+                        status = "overloaded"
+                elif load == cap:
+                    status = "at_capacity"
+                else:
+                    gap = cap - load
+                    if gap <= 2:
+                        status = "near_capacity"
+                    elif gap <= 5:
+                        status = "lightly_loaded"
+                    else:
+                        status = "underutilized"
+
+            assessments.append({"member": member, "load": load, "capacity": cap, "status": status})
+
+        # overall risk scoring
+        risk = "low"
+        overloaded = [a for a in assessments if a["status"] in {"overloaded", "severely_overloaded"}]
+        if overloaded:
+            if any(a["status"] == "severely_overloaded" for a in overloaded):
+                risk = "critical"
+            elif len(overloaded) >= 2:
+                risk = "high"
+            else:
+                risk = "medium"
+        else:
+            if unassigned and total_points > 0:
+                risk = "medium"
+            elif total_points == 0:
+                risk = "unknown"
+            else:
+                risk = "low"
+
+        # propose rebalancing suggestions
+        suggestions: List[str] = []
+        if unassigned:
+            suggestions.append("Assign owners to unassigned stories")
+        if risk in {"high", "critical"}:
+            suggestions.append("Redistribute stories from overloaded members")
+        if not suggestions:
+            suggestions.append("No action needed")
+
+        summary = {
+            "sprint_id": sprint_id,
+            "total_points": total_points,
+            "member_load": assessments,
+            "unassigned": unassigned,
+            "risk": risk,
+            "suggestions": suggestions,
+            "generated_at": _now_iso(),
+        }
+
+        # annotate sprint with capacity analysis history
+        sprint.setdefault("capacity_checks", []).append(summary)
+        sprint["modified_at"] = _now_iso()
+        self.save_data()
+        return summary
+
+    
 __all__ = ["SprintManager"]
