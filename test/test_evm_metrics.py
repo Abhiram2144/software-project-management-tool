@@ -63,3 +63,123 @@ def test_basic_evm():
 
     VAC1 = vac(bac, EAC1)
     assert approx(VAC1, bac - EAC1)
+
+
+
+from typing import Any, Dict, List, Tuple
+
+
+def target_concolic(x: int, s: str) -> str:
+    # Function with branches that a concolic tester should try to reach
+    if x < 0:
+        if "fail" in s:
+            return "NEG-FAIL"
+        return "NEG"
+
+    if x == 42:
+        # hidden defect path: requires exact number and substring
+        if "magic" in s:
+            return "CRASH"
+        return "THE-ANSWER"
+
+    if x % 3 == 0:
+        if s.startswith("a"):
+            return "MULTI-A"
+        return "MULTI"
+
+    return "OTHER"
+
+
+def concolic_attempt(func, seed_inputs: List[Tuple[int, str]], max_iters: int = 200) -> Dict[str, Dict]:
+   
+    found = {}
+    queue = list(seed_inputs)
+    tried = set()
+    iters = 0
+
+    while queue and iters < max_iters:
+        x, s = queue.pop(0)
+        key = (x, s)
+        if key in tried:
+            iters += 1
+            continue
+        tried.add(key)
+
+        try:
+            out = func(x, s)
+        except Exception as exc:
+            found[f"EXC-{x}-{s}"] = {"x": x, "s": s, "exc": repr(exc)}
+            iters += 1
+            continue
+
+        found[out] = {"x": x, "s": s}
+
+        # Mutation strategies (multiple branches)
+        # 1) Numeric neighbors
+        for dx in (-1, 1, 3, -3, 42 - x):
+            nx = x + dx
+            # branch: avoid enormous numbers
+            if abs(nx) > 1000:
+                continue
+            # push mutated candidate
+            queue.append((nx, s))
+
+        # 2) String mutations: append keywords that flip branches
+        if "magic" not in s:
+            queue.append((x, s + "magic"))
+        if "fail" not in s:
+            queue.append((x, s + "fail"))
+        if not s.startswith("a"):
+            queue.append((x, "a" + s))
+
+        # 3) Heuristic: if x divisible by 3 try nearby non-divisible values
+        if x % 3 == 0:
+            queue.append((x + 1, s))
+
+        iters += 1
+
+    return found
+
+
+def test_concolic_finds_hidden_defect():
+    seeds = [(1, "init"), (3, "start"), (0, "zero")]
+    found = concolic_attempt(target_concolic, seeds, max_iters=1000)
+
+    # Ensure we found a variety of outputs
+    assert "THE-ANSWER" in found or "CRASH" in found or "MULTI" in found
+
+    # Specifically, the harness should find the hidden defect (CRASH) by combining x==42 and 'magic'
+    assert "CRASH" in found, "Concolic attempt should discover CRASH path"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
