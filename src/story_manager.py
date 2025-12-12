@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 
-from .project_manager import ProjectManager
+from .project_manager.project_manager import ProjectManager
 
 
 _pm = ProjectManager()

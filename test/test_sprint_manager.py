@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import pytest
 from src.sprint_manager import SprintManager
-from src.project_manager import ProjectManager
+from src.project_manager.project_manager import ProjectManager
 
 
 def test_create_sprint_success(tmp_path):

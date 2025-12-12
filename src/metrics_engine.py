@@ -98,3 +98,69 @@ def calculate_cocomo_II(
             "effort_multipliers": dict(effort_multipliers),
         },
     }
+
+
+from typing import Iterable, Dict, Optional
+
+def compute_pv(planned_values: Iterable[float]) -> float:
+    return float(sum(planned_values))
+
+def compute_ev(tasks: Iterable[Dict]) -> float:
+    total = 0.0
+    for t in tasks:
+        if 'earned_value' in t and t['earned_value'] is not None:
+            total += float(t['earned_value'])
+        else:
+            planned = float(t.get('planned', 0.0))
+            pc = float(t.get('percent_complete', 0.0))
+            total += planned * pc
+    return total
+
+def compute_ac(actual_costs: Iterable[float]) -> float:
+    return float(sum(actual_costs))
+
+def compute_variances_and_indices(pv: float, ev: float, ac: float) -> Dict[str, Optional[float]]:
+    sv = ev - pv
+    cv = ev - ac
+    spi = (ev / pv) if pv else None
+    cpi = (ev / ac) if ac else None
+    return {'SV': sv, 'CV': cv, 'SPI': spi, 'CPI': cpi}
+
+def compute_eac(bac: float, ac: float, ev: float, cpi: Optional[float], method: str = 'cpi') -> Optional[float]:
+    if method == 'cpi':
+        if cpi and cpi > 0:
+            return bac / cpi
+        return None
+    if method == 'ac_plus_remaining':
+        return ac + (bac - ev)
+    if method == 'ac_ev_cpi':
+        if cpi and cpi > 0:
+            return ac + (bac - ev) / cpi
+        return None
+    return None
+
+def compute_vac(bac: float, eac: Optional[float]) -> Optional[float]:
+    return (bac - eac) if (eac is not None) else None
+
+def compute_evm_metrics(
+    planned_values: Iterable[float],
+    tasks: Iterable[Dict],
+    actual_costs: Iterable[float],
+    bac: Optional[float] = None,
+    eac_method: str = 'cpi'
+) -> Dict[str, Optional[float]]:
+    pv = compute_pv(planned_values)
+    ev = compute_ev(tasks)
+    ac = compute_ac(actual_costs)
+    vi = compute_variances_and_indices(pv, ev, ac)
+    eac = None
+    vac = None
+    if bac is not None:
+        eac = compute_eac(bac, ac, ev, vi.get('CPI'), method=eac_method)
+        vac = compute_vac(bac, eac)
+    return {
+        'PV': pv, 'EV': ev, 'AC': ac,
+        **vi,
+        'EAC': eac,
+        'VAC': vac
+    }
