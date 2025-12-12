@@ -162,6 +162,90 @@ def test_concolic_finds_hidden_defect():
 
 
 
+from typing import Any, Dict, List, Tuple
+
+
+def target_function(a: int, b: int) -> str:
+    # Function with nested branches to explore
+    if a > 0:
+        if b % 2 == 0:
+            return "A-even"
+        else:
+            if a + b > 10:
+                return "B-large"
+            elif a - b < -5:
+                return "C-negative-diff"
+            else:
+                return "C-other"
+    else:
+        if b < -5:
+            # edge-case: raises for symbolic explorer to catch
+            raise ValueError("b too small")
+        if a == 0 and b == 0:
+            return "zero-zero"
+        return "D-nonpositive"
+
+
+def symbolic_explore(func, domains: Dict[str, List[int]]) -> Dict[Tuple[Any, ...], Dict]:
+  
+    paths = {}
+    as_ = domains.get("a", [])
+    bs = domains.get("b", [])
+
+    for a in as_:
+        for b in bs:
+            signature = []
+            try:
+                # record decision points used as a crude path signature
+                signature.append(a > 0)
+                signature.append((b % 2) == 0)
+                signature.append((a + b) > 10)
+                signature.append((a - b) < -5)
+                # call the function (may raise)
+                out = func(a, b)
+                record = {"a": a, "b": b, "out": out, "exc": None}
+            except Exception as exc:  # branch: exception path
+                record = {"a": a, "b": b, "out": None, "exc": repr(exc)}
+                # include a marker in signature for exception path
+                signature.append(True)
+
+            key = tuple(signature)
+            # store if first witness or prefer exception witnesses
+            existing = paths.get(key)
+            if existing is None:
+                paths[key] = record
+            else:
+                # branch: prefer records with exceptions for the same signature
+                if existing.get("exc") is None and record.get("exc") is not None:
+                    paths[key] = record
+
+    return paths
+
+
+def test_symbolic_explorer_finds_branches_and_edgecases():
+    domains = {"a": list(range(-2, 7)), "b": list(range(-6, 13))}
+    paths = symbolic_explore(target_function, domains)
+
+    # We expect several different path signatures to be discovered
+    assert len(paths) >= 8
+
+    # Expect at least one witness for B-large
+    found_b_large = any(r.get("out") == "B-large" for r in paths.values())
+    assert found_b_large, "Should find inputs producing B-large"
+
+    # Expect an exception path for b too small
+    has_exception = any(r.get("exc") for r in paths.values())
+    assert has_exception, "Explorer should discover exception path (b too small)"
+
+    # Expect zero-zero specific path present
+    has_zero_zero = any(r.get("out") == "zero-zero" for r in paths.values())
+    assert has_zero_zero
+
+
+
+
+
+
 
 
 
