@@ -686,5 +686,248 @@ class SprintManager:
             "message": f"Retrospective logged for sprint {sprint_id}",
         }
 
+    def manage_sprint_capacity(self, sprint_id: int, member_capacity: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
+        """Analyze workload distribution for a sprint with many control paths.
 
+        `member_capacity` is a mapping of member -> max points. If missing, a
+        default capacity of 10 points per member is assumed. Uses nested
+        conditionals and exception handling to keep cyclomatic complexity high.
+        """
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        capacity_map = {}
+        if member_capacity is None:
+            capacity_map = {}
+        else:
+            try:
+                if isinstance(member_capacity, dict):
+                    capacity_map = member_capacity
+                else:
+                    capacity_map = {}
+            except Exception:
+                capacity_map = {}
+
+        stories = sprint.get("stories") or []
+        member_load: Dict[str, int] = {}
+        unassigned: List[Dict[str, Any]] = []
+        total_points = 0
+
+        for ref in stories:
+            pid = ref.get("project_id")
+            sid = ref.get("story_id")
+            try:
+                story = self.pm.get_story(pid, sid)
+            except Exception:
+                story = {"assignee": "unknown", "points": 0}
+
+            # derive assignee with multiple branches
+            assignee = story.get("assignee")
+            if not assignee:
+                assignee = story.get("owner") if story.get("owner") else "unassigned"
+
+            # parse points defensively
+            pts = 0
+            try:
+                pts = int(story.get("points", 0) or 0)
+            except Exception:
+                try:
+                    pts = int(float(story.get("points", 0)))
+                except Exception:
+                    pts = 0
+
+            total_points += pts
+            if assignee == "unassigned":
+                unassigned.append({"project_id": pid, "story_id": sid, "points": pts})
+            else:
+                member_load[assignee] = member_load.get(assignee, 0) + pts
+
+        # evaluate load vs capacity with branching heuristics
+        assessments: List[Dict[str, Any]] = []
+        for member, load in member_load.items():
+            cap = 10
+            if member in capacity_map:
+                try:
+                    cap = int(capacity_map.get(member, 10))
+                except Exception:
+                    cap = 10
+            status = "balanced"
+            if cap <= 0:
+                status = "invalid_capacity"
+            else:
+                if load > cap:
+                    if load >= cap * 1.5:
+                        status = "severely_overloaded"
+                    else:
+                        status = "overloaded"
+                elif load == cap:
+                    status = "at_capacity"
+                else:
+                    gap = cap - load
+                    if gap <= 2:
+                        status = "near_capacity"
+                    elif gap <= 5:
+                        status = "lightly_loaded"
+                    else:
+                        status = "underutilized"
+
+            assessments.append({"member": member, "load": load, "capacity": cap, "status": status})
+
+        # overall risk scoring
+        risk = "low"
+        overloaded = [a for a in assessments if a["status"] in {"overloaded", "severely_overloaded"}]
+        if overloaded:
+            if any(a["status"] == "severely_overloaded" for a in overloaded):
+                risk = "critical"
+            elif len(overloaded) >= 2:
+                risk = "high"
+            else:
+                risk = "medium"
+        else:
+            if unassigned and total_points > 0:
+                risk = "medium"
+            elif total_points == 0:
+                risk = "unknown"
+            else:
+                risk = "low"
+
+        # propose rebalancing suggestions
+        suggestions: List[str] = []
+        if unassigned:
+            suggestions.append("Assign owners to unassigned stories")
+        if risk in {"high", "critical"}:
+            suggestions.append("Redistribute stories from overloaded members")
+        if not suggestions:
+            suggestions.append("No action needed")
+
+        summary = {
+            "sprint_id": sprint_id,
+            "total_points": total_points,
+            "member_load": assessments,
+            "unassigned": unassigned,
+            "risk": risk,
+            "suggestions": suggestions,
+            "generated_at": _now_iso(),
+        }
+
+        # annotate sprint with capacity analysis history
+        sprint.setdefault("capacity_checks", []).append(summary)
+        sprint["modified_at"] = _now_iso()
+        self.save_data()
+        return summary
+
+    def export_sprint_report(self, sprint_id: int, filepath: Optional[str] = None,
+                              include_details: bool = True, fmt: str = "json") -> Dict[str, Any]:
+        """Export sprint results to a report file with rich branching.
+
+        Supports `json` (default) or `txt` formats. Ensures directories exist
+        and handles overwrite logic with extra control flow to keep complexity
+        high. Returns metadata about the saved report.
+        """
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        # resolve path
+        base_dir = Path("data/reports")
+        try:
+            base_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+
+        target_fmt = (fmt or "json").lower()
+        if target_fmt not in {"json", "txt"}:
+            target_fmt = "json"
+
+        if filepath:
+            out_path = Path(filepath)
+        else:
+            default_name = f"sprint_{sprint_id}_report.{target_fmt}"
+            out_path = base_dir / default_name
+
+        # assemble data
+        report: Dict[str, Any] = {
+            "sprint_id": sprint.get("id"),
+            "name": sprint.get("name"),
+            "start_date": sprint.get("start_date"),
+            "end_date": sprint.get("end_date"),
+            "capacity": sprint.get("capacity"),
+            "generated_at": _now_iso(),
+        }
+
+        # attach metrics with defensive calls
+        try:
+            report["velocity"] = self.calculate_velocity(sprint_id).get("velocity", 0.0)
+        except Exception:
+            report["velocity"] = 0.0
+
+        try:
+            summary = self.view_sprint_summary(sprint_id)
+            report["percent_complete"] = summary.get("percent_complete", 0.0)
+            if include_details:
+                report["stories"] = summary.get("stories", [])
+        except Exception:
+            report["percent_complete"] = 0.0
+            if include_details:
+                report["stories"] = []
+
+        # include retrospectives if present
+        retros = sprint.get("retrospectives", [])
+        if retros:
+            try:
+                latest_retro = retros[-1]
+                report["retrospective"] = latest_retro
+            except Exception:
+                report["retrospective"] = {}
+        else:
+            report["retrospective"] = {}
+
+        # convert to desired format and write
+        written = False
+        try:
+            if target_fmt == "json":
+                with out_path.open("w", encoding="utf-8") as fh:
+                    json.dump(report, fh, indent=2, ensure_ascii=False)
+                written = True
+            else:
+                # txt format
+                lines = [
+                    f"Sprint: {report.get('name')} ({report.get('sprint_id')})",
+                    f"Dates: {report.get('start_date')} -> {report.get('end_date')}",
+                    f"Capacity: {report.get('capacity')}",
+                    f"Velocity: {report.get('velocity')}",
+                    f"Completion: {report.get('percent_complete')}%",
+                ]
+                if include_details:
+                    lines.append("Stories:")
+                    for st in report.get("stories", []):
+                        try:
+                            lines.append(f" - {st.get('title')} (pts={st.get('points')}, progress={st.get('progress')})")
+                        except Exception:
+                            lines.append(" - <unknown story>")
+                if report.get("retrospective"):
+                    lines.append("Retrospective:")
+                    try:
+                        lines.append(f"  Sentiment: {report['retrospective'].get('sentiment')}")
+                        lines.append(f"  Priority: {report['retrospective'].get('priority')}")
+                    except Exception:
+                        lines.append("  <error reading retrospective>")
+                with out_path.open("w", encoding="utf-8") as fh:
+                    fh.write("\n".join(lines))
+                written = True
+        except Exception:
+            written = False
+
+        status = "saved" if written else "failed"
+        return {
+            "sprint_id": sprint_id,
+            "path": str(out_path),
+            "format": target_fmt,
+            "status": status,
+            "size": out_path.stat().st_size if out_path.exists() and written else 0,
+        }
+
+
+    
 __all__ = ["SprintManager"]

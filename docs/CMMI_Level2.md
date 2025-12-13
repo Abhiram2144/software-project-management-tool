@@ -4,7 +4,7 @@
 
 ## Software Project Management Tool — CMMI Level 2 Process Description
 
-Last updated: 2025-11-25
+Last updated: 2025-12-13
 
 This document describes how the Software Project Management Tool project implements CMMI Level 2 process areas for disciplined, repeatable delivery. It captures the Sprint 0 setup, roles, artifacts, control points, and measurable quality gates that the team follows.
 
@@ -344,6 +344,72 @@ Follow-up / Backlog Items
 
 Final Notes
 - Sprint 2 closed several important gaps but made clear the priority for Sprint 3 is tests, CI stabilization, and targeted refactoring to reduce complexity while keeping the implemented features intact.
+
+---
+
+## 14. Sprint 3 — Completion & Retrospective
+
+Sprint: 3
+
+Sprint end date: 2025-12-13
+
+Retrospective prepared: 2025-12-13
+
+Sprint objective
+- Complete remaining user stories for each member (stories 7 and 8), improve test coverage, and prepare research documentation for symbolic and concolic testing approaches.
+
+Key outcomes (Sprint 3)
+- All three members completed their assigned user stories #7 and #8:
+  - Abhiram: Implemented TSK-002 (Mark Task Complete) and PRJ-003 (Save/Load Project Data) with atomic writes and backup functionality.
+  - Charan: Completed sprint management enhancements and velocity tracking improvements.
+  - Roshan: Implemented SYM-001 (Symbolic Execution demo) and CON-001 (Concolic Testing harness) in test suite.
+- Research conducted on symbolic execution and concolic testing methodologies; demo implementations added to `test/` folder.
+- Story #9 for each member deferred to Sprint 4 to allow time for documentation and addressing carryover issues.
+
+What Went Well
+- All planned user stories (#7 and #8) completed on time with appropriate cyclomatic complexity and test coverage.
+- Symbolic and concolic testing research yielded valuable insights and working demo implementations.
+- Improved persistence mechanisms with backup/restore capabilities added to ProjectManager.
+
+What Didn't Go Well
+- **Critical Delay: PERT and COCOMO Modules Incomplete**: Roshan's metrics module work (MET-001, MET-002, MET-003) from Sprint 1 remains incomplete, blocking GitHub upload and stakeholder review.
+  - Root cause: Time allocation issues, competing priorities with research work, and lack of baseline calibration data.
+  - Impact: Cannot deliver complete metrics package; integration testing blocked.
+- Story #9 deferred for all members due to need to address PERT/COCOMO gap and improve documentation.
+
+Action Items (Concrete, Owner, Due Date)
+1. **Complete PERT and COCOMO Modules** — Owner: Roshan — Due: 2025-12-20
+   - Implement `calculate_pert`, `cocomo_basic`, and `cocomo_intermediate` with tests and documentation.
+   - Use simplified assumptions and document all calibration parameters.
+
+2. **Upload Metrics Module to GitHub** — Owner: Roshan — Due: 2025-12-21
+   - Create feature branch and PR for MET-001, MET-002, MET-003 once complete.
+
+3. **Add Integration Tests for Persistence** — Owner: Abhiram — Due: 2025-12-18
+   - Cover backup creation, restore scenarios, and atomic write behavior.
+
+4. **Document Symbolic/Concolic Research** — Owner: Roshan — Due: 2025-12-17
+   - Create `docs/research/symbolic_concolic_notes.md` summarizing findings and linking test implementations.
+
+5. **Finalize CI and Coverage Enforcement** — Owner: Abhiram — Due: 2025-12-19
+   - Enable GitHub Actions with coverage >= 85% requirement and radon CC checks.
+
+6. **Sprint 4 Planning Coordination** — Owner: All members — Due: 2025-12-16
+   - Finalize backlog for deferred story #9 for each member and schedule integration testing.
+
+Quality Gates (Sprint 4 prerequisites)
+- PERT and COCOMO modules must be complete, tested, and merged before Sprint 4 completion.
+- All deferred stories (#9) must maintain >= 85% coverage and pass CI checks.
+- Feature branches must be reviewed and merged to `development` before final release.
+
+Follow-up / Backlog Items
+- Create research summary document for symbolic/concolic approaches — Owner: Roshan — Due: 2025-12-17
+- Historical velocity tracking enhancement — Owner: Charan — Due: 2026-01-10
+- `test_registry` implementation — Owner: Roshan — Due: 2026-01-15
+
+Final Notes
+- Sprint 3 successfully delivered core functionality enhancements and valuable research work, but exposed a critical gap in metrics module completion. Roshan's delay on PERT/COCOMO work is the highest priority issue and must be resolved in parallel with Sprint 4 work to ensure project completeness.
+- The team demonstrated strong technical capability with symbolic/concolic implementations, but must balance research activities with baseline deliverable commitments in the final sprint.
 
 
 

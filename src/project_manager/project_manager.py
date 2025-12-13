@@ -10,6 +10,10 @@ import json
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
+import shutil
+import tempfile
+import glob
+import os
 from typing import Any, Dict, List, Optional
 
 
@@ -449,4 +453,172 @@ class ProjectManager:
         return task
 
 
+    def mark_task_complete(
+        self,
+        project_id: int,
+        story_id: int,
+        task_identifier: Optional[Any] = None,
+        by: Optional[str] = None,
+        force: bool = False,
+        cascade: bool = False,
+    ) -> Dict[str, Any]:
+        """Mark a task complete.
+
+        task_identifier may be an `int` (task id) or `str` (task title). Behavior branches:
+        - if task already completed and `force` is False -> no-op (returns task)
+        - if `force` True -> re-mark/completed timestamp updated
+        - if `cascade` True and task has `subtasks`, attempt to mark those complete as well
+
+        The method updates `modified_at` on task and parent story and persists changes.
+        Raises ValueError if project/story/task not found or validation fails.
+        """
+        if task_identifier is None:
+            raise ValueError("task identifier required")
+
+        project = self._find_project(project_id)
+        if project is None:
+            raise ValueError("Project not found")
+
+        story = None
+        for s in project.get("stories", []):
+            if s.get("id") == story_id:
+                story = s
+                break
+
+        if story is None:
+            raise ValueError("Story not found")
+
+        # Find task by id or title
+        task = None
+        for t in story.get("tasks", []):
+            if isinstance(task_identifier, int) and t.get("id") == task_identifier:
+                task = t
+                break
+            if isinstance(task_identifier, str) and t.get("title", "").strip().lower() == str(task_identifier).strip().lower():
+                task = t
+                break
+
+        if task is None:
+            raise ValueError("Task not found")
+
+        status = (task.get("status") or "").lower()
+        already_done = status in ("done", "completed", "closed")
+
+        # Branch: if already done and not forced, return no-op (but still update note)
+        if already_done and not force:
+            # update small audit trail and return
+            task.setdefault("notes", []).append(f"mark_attempted_by:{by or 'unknown'}")
+            return task
+
+        # Branch: if assignee missing and not forced, allow marking but note it
+        if not task.get("assigned_to") and not force:
+            task.setdefault("notes", []).append("completed_unassigned")
+
+        # Mark this task complete
+        task["status"] = "done"
+        task["completed_at"] = _now_iso()
+        task["modified_at"] = _now_iso()
+        if by:
+            task.setdefault("completed_by", by)
+
+        # Cascade: if requested and subtasks exist, attempt to mark them
+        if cascade and isinstance(task.get("subtasks"), list):
+            for sub in task.get("subtasks", []):
+                # multiple branches: if subtask already done, skip; if missing id, mark by title
+                try:
+                    if (sub.get("status") or "").lower() not in ("done", "completed", "closed"):
+                        sub["status"] = "done"
+                        sub["completed_at"] = _now_iso()
+                        sub["modified_at"] = _now_iso()
+                except Exception:
+                    # ignore malformed subtasks but record note
+                    task.setdefault("notes", []).append("subtask_mark_failed")
+
+        # Recalculate story progress: completed tasks / total tasks
+        total = len(story.get("tasks", []))
+        completed = sum(1 for t in story.get("tasks", []) if (t.get("status") or "").lower() in ("done", "completed", "closed"))
+        progress = 0
+        if total > 0:
+            progress = int((completed / total) * 100)
+        story["progress"] = progress
+
+        # If story now complete, set story-level metadata
+        if progress == 100:
+            story["status"] = "done"
+            story["completed_at"] = _now_iso()
+
+        story["modified_at"] = _now_iso()
+        project["modified_at"] = _now_iso()
+        self.save_data()
+        return task
+
+    def save_project_data(self, backup: bool = True) -> str:
+        """Persist current project store to disk with optional backup.
+
+        Returns the path to the saved file. Creates a timestamped backup if `backup` True.
+        Raises IOError on failure.
+        """
+        dest = str(self.data_file)
+
+        # Branch: ensure parent directory exists
+        if not self.data_file.parent.exists():
+            try:
+                self.data_file.parent.mkdir(parents=True, exist_ok=True)
+            except Exception as exc:
+                raise IOError(f"Failed to create data directory: {exc}")
+
+        # Create backup if requested and the file exists
+        if backup and self.data_file.exists():
+            try:
+                ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+                bak_name = f"{dest}.bak.{ts}"
+                shutil.copy2(dest, bak_name)
+            except Exception:
+                # non-fatal: if backup fails, continue but record note in data
+                self._data.setdefault("_notes", []).append("backup_failed")
+
+        # Atomic write: write to temp file then move
+        fd, tmp_path = tempfile.mkstemp(dir=str(self.data_file.parent))
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump(self._data, fh, indent=2, ensure_ascii=False)
+            # move into place
+            shutil.move(tmp_path, dest)
+        except Exception as exc:
+            # attempt to remove temp file if it exists
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass
+            raise IOError(f"Failed to save data: {exc}")
+
+        return dest
+
+    def load_project_data(self, restore_backup: bool = False) -> Dict[str, Any]:
+        """Load project data from disk. If file missing, returns current in-memory data.
+
+        If `restore_backup` is True and the main file is corrupt, attempt to restore the latest backup.
+        """
+        try:
+            data = self.load_data()
+            return data
+        except Exception:
+            # load_data already handles many cases, but for safety, attempt restore
+            if restore_backup:
+                pattern = f"{str(self.data_file)}.bak.*"
+                bak_files = sorted(glob.glob(pattern), reverse=True)
+                for bak in bak_files:
+                    try:
+                        with open(bak, "r", encoding="utf-8") as fh:
+                            self._data = json.load(fh)
+                        # write restored data to primary path
+                        self.save_data()
+                        return self._data
+                    except Exception:
+                        continue
+            # re-raise as ValueError to indicate load failure
+            raise ValueError("Failed to load project data and no valid backup available")
+
 __all__ = ["ProjectManager"]
+
