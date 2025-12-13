@@ -1,0 +1,78 @@
+=========================================================
+                                    SPRINT 3 RETROSPECTIVE
+=========================================================
+
+Sprint: 3
+Sprint end date: 2025-12-13
+Retrospective prepared: 2025-12-13
+
+**Sprint Goal**
+- Complete remaining user stories for each member (stories 7 and 8), improve test coverage, and prepare research documentation for symbolic and concolic testing approaches.
+
+**What Went Well**
+- **Completed Stories by Member**:
+  - Abhiram: Completed user stories #7 (TSK-002 – Mark Task Complete) and #8 (PRJ-003 – Save/Load Project Data) with good cyclomatic complexity and safe persistence mechanisms.
+  - Charan: Completed user stories #7 and #8 related to sprint management enhancements and velocity tracking improvements.
+  - Roshan: Completed user stories #7 (SYM-001 – Symbolic Execution testing demo) and #8 (CON-001 – Concolic Testing harness) with self-contained test implementations.
+
+- **Research and Documentation**: The team invested time in researching symbolic execution and concolic testing approaches. Demo implementations were added to the test suite showing path exploration and defect discovery capabilities.
+
+- **Code Quality Improvements**: Added docstrings, input validation, and atomic file operations across multiple modules. Backup and restore functionality implemented for project data persistence.
+
+**What Didn't Go Well**
+- **Delayed Deliverables from Roshan**: PERT chart generation and COCOMO estimation modules (MET-001, MET-002, MET-003) originally planned for Sprint 1 remain incomplete. These deliverables were delayed due to:
+  - Time allocation issues and competing priorities with symbolic/concolic research.
+  - Insufficient baseline data for realistic COCOMO calibration.
+  - Delayed coordination on metrics module integration with the main project manager.
+
+- **GitHub Upload Blocked**: Because PERT and COCOMO modules are incomplete, the team could not upload the full metrics package to GitHub as planned. This blocks integration and review by stakeholders.
+
+- **Story #9 Deferred**: Each member's 9th user story was deferred to Sprint 4 (the final sprint) to allow time for documentation, testing, and addressing the PERT/COCOMO gap.
+
+**Root Causes / Observations**
+- Roshan underestimated the complexity of implementing realistic PERT and COCOMO functions; these require domain knowledge and calibration that was not available early in the sprint.
+- The team prioritized symbolic/concolic research over completing Sprint 1 carryover tasks, which caused a backlog bottleneck.
+- Communication gaps between Roshan and other team members delayed the handoff of required inputs (e.g., task estimates, historical project data) for metrics calculations.
+
+**Action Items (Concrete, Owner, Due Date)**
+1. **Complete PERT and COCOMO Modules** — Owner: Roshan — Due: 2025-12-20
+   - Implement `calculate_pert`, `cocomo_basic`, and `cocomo_intermediate` functions with docstrings and unit tests.
+   - Use simplified assumptions and document calibration parameters clearly.
+   - Add test cases with known inputs/outputs to validate correctness.
+
+2. **Upload Metrics Module to GitHub** — Owner: Roshan — Due: 2025-12-21
+   - Once PERT/COCOMO are complete, create a feature branch `feature/MET-001-002-003-metrics` and push.
+   - Open a PR with summary of changes and link to user stories MET-001, MET-002, MET-003.
+
+3. **Coordinate on Sprint 4 Planning** — Owner: All members — Due: 2025-12-16
+   - Review deferred story #9 for each member and finalize Sprint 4 backlog.
+   - Allocate time for integration testing and final documentation.
+
+4. **Add Integration Tests for Persistence** — Owner: Abhiram — Due: 2025-12-18
+   - Add tests covering `save_project_data` backup creation and `load_project_data` restore scenarios.
+   - Validate atomic write behavior and backup file cleanup.
+
+5. **Document Symbolic/Concolic Research Findings** — Owner: Roshan — Due: 2025-12-17
+   - Create a brief research summary document (`docs/research/symbolic_concolic_notes.md`) describing approaches, trade-offs, and future directions.
+   - Link the demo test implementations (`test_sym_001`, `test_con_001`) in the document.
+
+6. **Stabilize CI and Enable Coverage Enforcement** — Owner: Abhiram — Due: 2025-12-19
+   - Finalize GitHub Actions workflow to block PRs with coverage < 85%.
+   - Add radon CC check and fail builds on violations.
+
+**Quality Gates (Sprint 4 prerequisites)**
+- All deferred stories (#9 for each member) must include tests and maintain coverage >= 85%.
+- PERT and COCOMO modules must be merged and passing CI before Sprint 4 ends.
+- All feature branches must be reviewed and merged to `development` before final release.
+
+**Follow-up / Backlog Items**
+- Create `docs/research/symbolic_concolic_notes.md` summarizing research findings — Owner: Roshan — Due: 2025-12-17
+- Add historical velocity tracking to the sprint manager — Owner: Charan — Due: 2026-01-10
+- Implement `test_registry` module for cataloging test outcomes — Owner: Roshan — Due: 2026-01-15
+
+**Final Notes**
+- Sprint 3 achieved significant progress on core functionality (task completion, persistence, symbolic/concolic demos) but revealed a critical gap in metrics module completion. The team must prioritize Roshan's PERT/COCOMO work in parallel with Sprint 4 story #9 implementations to ensure the project is complete and ready for final delivery.
+
+- The research into symbolic and concolic testing was valuable and positions the team well for future advanced testing features, but it must not come at the expense of core deliverables.
+
+=========================================================
