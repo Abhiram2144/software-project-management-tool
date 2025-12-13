@@ -151,16 +151,7 @@ def test_concolic_finds_hidden_defect():
     # Specifically, the harness should find the hidden defect (CRASH) by combining x==42 and 'magic'
     assert "CRASH" in found, "Concolic attempt should discover CRASH path"
 
-
-
-
-
-
-
-
-
-
-
+# symbolic execution 
 
 from typing import Any, Dict, List, Tuple
 
@@ -239,7 +230,8 @@ def test_symbolic_explorer_finds_branches_and_edgecases():
 
     # Expect zero-zero specific path present
     has_zero_zero = any(r.get("out") == "zero-zero" for r in paths.values())
-    assert has_zero_zero
+
+    assert has_zero_zero 
 
 
 
