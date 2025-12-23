@@ -1,13 +1,4 @@
-"""CLI wrapper to exercise user stories via ProjectManager.
 
-Usage examples:
-  python -m src.cli create-project --title "Proj" --owner "Alice" --description "Demo"
-  python -m src.cli add-story --project-id 1 --title "Story" --points 3 --description "desc"
-  python -m src.cli add-task --project-id 1 --story-id 1 --title "Task"
-  python -m src.cli complete-task --project-id 1 --story-id 1 --task-id 1 --by "Alice"
-  python -m src.cli list-projects
-  python -m src.cli delete-story --project-id 1 --story-id 1
-"""
 import argparse
 import json
 import sys
@@ -132,7 +123,7 @@ def interactive_menu(pm: ProjectManager, sm: SprintManager) -> None:
 
     while True:
         print("\n==== Project Manager Menu ====")
-        for k, v in sorted(menu.items()):
+        for k, v in sorted(menu.items(), key=lambda x: int(x[0])):
             print(f"{k}. {v}")
         choice = input("Select an option: ").strip()
 
