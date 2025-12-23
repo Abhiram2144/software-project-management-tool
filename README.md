@@ -44,9 +44,37 @@ python -m src.cli --menu
 ```
 
 ### Run tests
+
+You can run the bundled test suites (for `as1809`, `scrk3`, or other test folders) using the provided test runner `run_tests.py`, which prints clear start/finish messages and runs `pytest`.
+
+Prerequisites:
+- Activate your virtualenv and install test dependencies (e.g. `pytest`).
+
+Examples (from repository root):
+
 ```powershell
-# From repo root, after activation
-python -m unittest discover as1809/test
+# Run the default target (scrk3/test)
+python run_tests.py
+
+# Run the as1809 test suite
+python run_tests.py as1809/test
+
+# Run the scrk3 test suite
+python run_tests.py scrk3/test
+```
+
+The script prints an indication before the run and a summary after completion, for example:
+
+```
+=== Running tests for: scrk3/test ===
+...test output...
+=== All tests passed for: scrk3/test ===
+```
+
+If you prefer to call pytest directly, you can still do so:
+
+```powershell
+python -m pytest scrk3/test
 ```
 
 

@@ -529,5 +529,266 @@
       "project_id": 1,
       "story_id": 12345
     }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.033520Z",
+    "operation": "edit_story",
+    "message": "Points cannot be negative",
+    "context": {
+      "points": -1
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.051056Z",
+    "operation": "mark_task_complete",
+    "message": "task identifier required",
+    "context": {
+      "project_id": 1,
+      "story_id": 1
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.077671Z",
+    "operation": "delete_story",
+    "message": "Story not found",
+    "context": {
+      "project_id": 1,
+      "story_id": 999
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.083847Z",
+    "operation": "delete_story",
+    "message": "Story has tasks; delete with cascade or archive instead",
+    "context": {
+      "project_id": 1,
+      "story_id": 1
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.099767Z",
+    "operation": "add_story_to_project",
+    "message": "title cannot be blank",
+    "context": {
+      "field": "title"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.103744Z",
+    "operation": "add_story_to_project",
+    "message": "Story title already exists in project",
+    "context": {
+      "title": "story 1",
+      "project_id": 1
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.150957Z",
+    "operation": "add_story_to_project",
+    "message": "Points cannot be negative",
+    "context": {
+      "points": -1
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.158490Z",
+    "operation": "add_task_to_story",
+    "message": "task title cannot be blank",
+    "context": {
+      "field": "task title"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.163488Z",
+    "operation": "add_task_to_story",
+    "message": "Task title already exists in story",
+    "context": {
+      "task_title": "task 1",
+      "project_id": 1,
+      "story_id": 1
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.168472Z",
+    "operation": "add_task_to_story",
+    "message": "Estimated hours cannot be negative",
+    "context": {
+      "estimated_hours": -5.0
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.172233Z",
+    "operation": "create_project",
+    "message": "title cannot be blank",
+    "context": {
+      "field": "title"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.177351Z",
+    "operation": "create_project",
+    "message": "Project title already exists",
+    "context": {
+      "title": "proj a"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.181231Z",
+    "operation": "create_project",
+    "message": "owner cannot be blank",
+    "context": {
+      "field": "owner"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.188338Z",
+    "operation": "create_project",
+    "message": "owner cannot be blank",
+    "context": {
+      "field": "owner"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.192335Z",
+    "operation": "add_story_to_project",
+    "message": "Points must be an integer",
+    "context": {
+      "points": "abc"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.198150Z",
+    "operation": "create_project",
+    "message": "title is required",
+    "context": {
+      "field": "title"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.203695Z",
+    "operation": "add_story_to_project",
+    "message": "Points must be an integer",
+    "context": {
+      "points": "not-a-number"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.216677Z",
+    "operation": "create_project",
+    "message": "owner cannot be blank",
+    "context": {
+      "field": "owner"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.222201Z",
+    "operation": "add_story_to_project",
+    "message": "Project not found",
+    "context": {
+      "project_id": 999
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.226202Z",
+    "operation": "add_story_to_project",
+    "message": "Points cannot be negative",
+    "context": {
+      "points": -5
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.233215Z",
+    "operation": "create_project",
+    "message": "title cannot be blank",
+    "context": {
+      "field": "title"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.241202Z",
+    "operation": "edit_story",
+    "message": "Story title cannot be blank",
+    "context": {
+      "project_id": 1,
+      "story_id": 1
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.246712Z",
+    "operation": "edit_story",
+    "message": "Story not found",
+    "context": {
+      "project_id": 1,
+      "story_id": 999
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.265721Z",
+    "operation": "mark_task_complete",
+    "message": "Task not found",
+    "context": {
+      "project_id": 1,
+      "story_id": 1,
+      "task_identifier": 999
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.270735Z",
+    "operation": "add_story_to_project",
+    "message": "Points must be an integer",
+    "context": {
+      "points": "bad"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.274735Z",
+    "operation": "create_project",
+    "message": "owner is required",
+    "context": {
+      "field": "owner"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.290736Z",
+    "operation": "mark_task_complete",
+    "message": "Task not found",
+    "context": {
+      "project_id": 1,
+      "story_id": 1,
+      "task_identifier": 999
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.295237Z",
+    "operation": "create_project",
+    "message": "owner cannot be blank",
+    "context": {
+      "field": "owner"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.300357Z",
+    "operation": "add_story_to_project",
+    "message": "Points must be an integer",
+    "context": {
+      "points": "bad"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.304250Z",
+    "operation": "create_project",
+    "message": "Project title already exists",
+    "context": {
+      "title": "proj"
+    }
+  },
+  {
+    "timestamp": "2025-12-23T23:44:52.311237Z",
+    "operation": "delete_story",
+    "message": "Story not found",
+    "context": {
+      "project_id": 1,
+      "story_id": 12345
+    }
   }
 ]
