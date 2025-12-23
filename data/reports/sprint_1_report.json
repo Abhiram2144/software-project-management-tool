@@ -1,0 +1,11 @@
+{
+  "sprint_id": 1,
+  "name": "EX2",
+  "start_date": "2025-12-01T00:00:00",
+  "end_date": "2025-12-07T00:00:00",
+  "capacity": 5,
+  "generated_at": "2025-12-23T23:44:30.068881Z",
+  "velocity": 0.0,
+  "percent_complete": 0.0,
+  "retrospective": {}
+}

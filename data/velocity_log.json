@@ -1,0 +1,26 @@
+[
+  {
+    "sprint_id": 1,
+    "sprint_velocity": 5.0,
+    "average_velocity": 5.0,
+    "logged_at": "2025-12-23T23:42:59.001750Z"
+  },
+  {
+    "sprint_id": 1,
+    "sprint_velocity": 8.0,
+    "average_velocity": 8.0,
+    "logged_at": "2025-12-23T23:42:59.050332Z"
+  },
+  {
+    "sprint_id": 1,
+    "sprint_velocity": 5.0,
+    "average_velocity": 5.0,
+    "logged_at": "2025-12-23T23:44:30.077883Z"
+  },
+  {
+    "sprint_id": 1,
+    "sprint_velocity": 8.0,
+    "average_velocity": 8.0,
+    "logged_at": "2025-12-23T23:44:30.133681Z"
+  }
+]
