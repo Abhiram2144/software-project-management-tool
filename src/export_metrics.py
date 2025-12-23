@@ -5,7 +5,7 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from evm.metrics import cpi, spi
-from metrics_engine import calculate_pert, calculate_cocomo_I
+from src.metrics_engine import calculate_pert, calculate_cocomo_I
 
 OUTPUT_DIR = "metrics"
 
