@@ -17,6 +17,18 @@ import os
 from typing import Any, Dict, List, Optional
 
 
+class ValidationError(Exception):
+    """Structured validation error for consistent CLI and backend responses."""
+
+    def __init__(self, message: str, code: str = "validation_error", context: Optional[Dict[str, Any]] = None):
+        super().__init__(message)
+        self.code = code
+        self.context = context or {}
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {"code": self.code, "message": str(self), "context": self.context}
+
+
 def _now_iso() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
@@ -44,7 +56,65 @@ class ProjectManager:
     def __init__(self, data_file: Optional[str] = None):
         self.data_file = Path(data_file or "data/projects.json")
         self._data: Dict[str, Any] = {"projects": []}
+        self.error_log_file = Path("data/error_log.json")
         self.load_data()
+
+    # -----------------
+    # Validation helpers
+    # -----------------
+    def _log_error(self, operation: str, message: str, context: Optional[Dict[str, Any]] = None) -> None:
+        """Append a structured error entry to error_log.json (best-effort)."""
+        try:
+            if not self.error_log_file.parent.exists():
+                self.error_log_file.parent.mkdir(parents=True, exist_ok=True)
+
+            payload = []
+            if self.error_log_file.exists():
+                with self.error_log_file.open("r", encoding="utf-8") as fh:
+                    try:
+                        payload = json.load(fh)
+                        if not isinstance(payload, list):
+                            payload = []
+                    except Exception:
+                        payload = []
+
+            entry = {
+                "timestamp": _now_iso(),
+                "operation": operation,
+                "message": message,
+                "context": context or {},
+            }
+            payload.append(entry)
+
+            with self.error_log_file.open("w", encoding="utf-8") as fh:
+                json.dump(payload, fh, indent=2, ensure_ascii=False)
+        except Exception:
+            # Logging must never break normal control flow
+            pass
+
+    def _raise_error(self, operation: str, message: str, code: str = "validation_error", context: Optional[Dict[str, Any]] = None):
+        self._log_error(operation, message, context)
+        raise ValidationError(message=message, code=code, context=context)
+
+    def _require_non_empty(self, operation: str, field: str, value: Any):
+        if value is None:
+            self._raise_error(operation, f"{field} is required", context={"field": field})
+        if isinstance(value, str):
+            if not value.strip():
+                self._raise_error(operation, f"{field} cannot be blank", context={"field": field})
+        else:
+            # Non-string values are allowed as long as truthy
+            if not value:
+                self._raise_error(operation, f"{field} cannot be empty", context={"field": field})
+
+    def _validate_points(self, operation: str, points: Any) -> int:
+        try:
+            pts = int(points)
+        except Exception:
+            self._raise_error(operation, "Points must be an integer", context={"points": points})
+        if pts < 0:
+            self._raise_error(operation, "Points cannot be negative", context={"points": pts})
+        return pts
 
     def load_data(self) -> Dict[str, Any]:
         """Load data from disk; create empty store if missing."""
@@ -84,13 +154,14 @@ class ProjectManager:
         Raises ValueError on blank title or duplicate title (case-insensitive).
         Returns the project dict.
         """
+        operation = "create_project"
+        self._require_non_empty(operation, "title", title)
+        self._require_non_empty(operation, "owner", owner)
         title = (title or "").strip()
-        if not title:
-            raise ValueError("Project title cannot be blank")
 
         for p in self._data.get("projects", []):
             if p.get("title", "").strip().lower() == title.lower():
-                raise ValueError("Project title already exists")
+                self._raise_error(operation, "Project title already exists", context={"title": title})
 
         project = {
             "id": self._next_project_id(),
@@ -126,6 +197,21 @@ class ProjectManager:
                 return p
         return None
 
+    def get_story(self, project_id: int, story_id: int) -> Dict[str, Any]:
+        """Return a story dict for given project_id and story_id.
+
+        Raises ValidationError if not found.
+        """
+        project = self._find_project(project_id)
+        if project is None:
+            self._raise_error("get_story", "Project not found", code="not_found", context={"project_id": project_id})
+
+        for s in project.get("stories", []):
+            if s.get("id") == story_id:
+                return s
+
+        self._raise_error("get_story", "Story not found", code="not_found", context={"project_id": project_id, "story_id": story_id})
+
     def _next_story_id(self, project: Dict[str, Any]) -> int:
         ids = [s.get("id", 0) for s in project.get("stories", [])]
         return max(ids, default=0) + 1
@@ -136,23 +222,24 @@ class ProjectManager:
         Raises ValueError for blank title, duplicate titles within a project, or
         if the project does not exist. Returns the created story dict.
         """
+        operation = "add_story_to_project"
+        self._require_non_empty(operation, "title", title)
+        points_value = self._validate_points(operation, points)
         title = (title or "").strip()
-        if not title:
-            raise ValueError("Story title cannot be blank")
 
         project = self._find_project(project_id)
         if project is None:
-            raise ValueError("Project not found")
+            self._raise_error(operation, "Project not found", code="not_found", context={"project_id": project_id})
 
         for s in project.get("stories", []):
             if s.get("title", "").strip().lower() == title.lower():
-                raise ValueError("Story title already exists in project")
+                self._raise_error(operation, "Story title already exists in project", context={"title": title, "project_id": project_id})
 
         story = Story(
             id=self._next_story_id(project),
             title=title,
             description=description or "",
-            points=int(points or 0),
+            points=points_value,
             tasks=[],
             created_at=_now_iso(),
             modified_at=_now_iso(),
@@ -180,9 +267,10 @@ class ProjectManager:
         Raises ValueError if project or story not found, or if title would collide.
         Returns the updated story dict.
         """
+        operation = "edit_story"
         project = self._find_project(project_id)
         if project is None:
-            raise ValueError("Project not found")
+            self._raise_error(operation, "Project not found", code="not_found", context={"project_id": project_id})
 
         story = None
         for s in project.get("stories", []):
@@ -191,7 +279,7 @@ class ProjectManager:
                 break
 
         if story is None:
-            raise ValueError("Story not found")
+            self._raise_error(operation, "Story not found", code="not_found", context={"project_id": project_id, "story_id": story_id})
 
         # Multiple validation and branching paths to exercise different branches.
         original_title = story.get("title")
@@ -202,7 +290,7 @@ class ProjectManager:
             new_title = (title or "").strip()
             if not new_title:
                 # branch: explicit blank title rejection
-                raise ValueError("Story title cannot be blank")
+                self._raise_error(operation, "Story title cannot be blank", context={"project_id": project_id, "story_id": story_id})
 
             # branch: if new title equals existing title (no-op)
             if new_title == original_title:
@@ -213,7 +301,7 @@ class ProjectManager:
                 for s in project.get("stories", []):
                     if s.get("id") != story_id and s.get("title", "").strip().lower() == new_title.lower():
                         # duplicate title branch
-                        raise ValueError("Story title already exists in project")
+                        self._raise_error(operation, "Story title already exists in project", context={"title": new_title, "project_id": project_id})
                 story["title"] = new_title
                 title_changed = True
 
@@ -227,23 +315,7 @@ class ProjectManager:
 
         # POINTS updates with several validation branches
         if points is not None:
-            # accept numeric-like strings too
-            if isinstance(points, str):
-                if points.strip().isdigit():
-                    pts = int(points.strip())
-                else:
-                    # branch: malformed string
-                    raise ValueError("Points must be an integer")
-            else:
-                try:
-                    pts = int(points)
-                except Exception:
-                    # branch: cannot convert to int
-                    raise ValueError("Points must be an integer")
-
-            # branch: negative points are rejected
-            if pts < 0:
-                raise ValueError("Points cannot be negative")
+            pts = self._validate_points(operation, points)
 
             # branch: extreme value handling
             if pts > 1000:
@@ -284,9 +356,10 @@ class ProjectManager:
         Returns the deleted story dict.
         Raises ValueError if project or story not found.
         """
+        operation = "delete_story"
         project = self._find_project(project_id)
         if project is None:
-            raise ValueError("Project not found")
+            self._raise_error(operation, "Project not found", code="not_found", context={"project_id": project_id})
 
         stories = project.get("stories", [])
 
@@ -308,7 +381,7 @@ class ProjectManager:
                 if has_tasks and not prefer_soft:
                     # branch: cannot delete stories with tasks without cascade
                     # To keep the public API stable, raise an informative error
-                    raise ValueError("Story has tasks; delete with cascade or archive instead")
+                    self._raise_error(operation, "Story has tasks; delete with cascade or archive instead", context={"project_id": project_id, "story_id": story_id})
 
                 if prefer_soft or has_tasks:
                     # perform soft-delete / archive
@@ -329,7 +402,7 @@ class ProjectManager:
                     return deleted
 
         # No story matched
-        raise ValueError("Story not found")
+        self._raise_error(operation, "Story not found", code="not_found", context={"project_id": project_id, "story_id": story_id})
 
     def add_task_to_story(
         self,
@@ -349,9 +422,10 @@ class ProjectManager:
 
         Raises ValueError if project, story not found, or validation fails.
         """
+        operation = "add_task_to_story"
         project = self._find_project(project_id)
         if project is None:
-            raise ValueError("Project not found")
+            self._raise_error(operation, "Project not found", code="not_found", context={"project_id": project_id})
 
         story = None
         for s in project.get("stories", []):
@@ -360,18 +434,17 @@ class ProjectManager:
                 break
 
         if story is None:
-            raise ValueError("Story not found")
+            self._raise_error(operation, "Story not found", code="not_found", context={"project_id": project_id, "story_id": story_id})
 
         # Validate task title
+        self._require_non_empty(operation, "task title", title)
         task_title = (title or "").strip()
-        if not task_title:
-            raise ValueError("Task title cannot be blank")
 
         # Multiple branching paths for cyclomatic complexity:
         # 1. Check for duplicate task titles within the story
         existing_task_titles = {t.get("title", "").lower() for t in story.get("tasks", [])}
         if task_title.lower() in existing_task_titles:
-            raise ValueError("Task title already exists in story")
+            self._raise_error(operation, "Task title already exists in story", context={"task_title": task_title, "project_id": project_id, "story_id": story_id})
 
         # 2. Process estimated hours with different branches
         estimated = 0.0
@@ -382,18 +455,18 @@ class ProjectManager:
                     try:
                         estimated = float(estimated_hours)
                     except Exception:
-                        raise ValueError("Estimated hours must be numeric")
+                        self._raise_error(operation, "Estimated hours must be numeric", context={"estimated_hours": estimated_hours})
                 else:
-                    raise ValueError("Estimated hours must be numeric")
+                    self._raise_error(operation, "Estimated hours must be numeric", context={"estimated_hours": estimated_hours})
             else:
                 try:
                     estimated = float(estimated_hours)
                 except Exception:
-                    raise ValueError("Estimated hours must be numeric")
+                    self._raise_error(operation, "Estimated hours must be numeric", context={"estimated_hours": estimated_hours})
 
             # branch: reject negative hours
             if estimated < 0:
-                raise ValueError("Estimated hours cannot be negative")
+                self._raise_error(operation, "Estimated hours cannot be negative", context={"estimated_hours": estimated})
 
             # branch: warn on extremely large hours
             if estimated > 1000:
@@ -472,12 +545,13 @@ class ProjectManager:
         The method updates `modified_at` on task and parent story and persists changes.
         Raises ValueError if project/story/task not found or validation fails.
         """
+        operation = "mark_task_complete"
         if task_identifier is None:
-            raise ValueError("task identifier required")
+            self._raise_error(operation, "task identifier required", context={"project_id": project_id, "story_id": story_id})
 
         project = self._find_project(project_id)
         if project is None:
-            raise ValueError("Project not found")
+            self._raise_error(operation, "Project not found", code="not_found", context={"project_id": project_id})
 
         story = None
         for s in project.get("stories", []):
@@ -486,7 +560,7 @@ class ProjectManager:
                 break
 
         if story is None:
-            raise ValueError("Story not found")
+            self._raise_error(operation, "Story not found", code="not_found", context={"project_id": project_id, "story_id": story_id})
 
         # Find task by id or title
         task = None
@@ -499,7 +573,7 @@ class ProjectManager:
                 break
 
         if task is None:
-            raise ValueError("Task not found")
+            self._raise_error(operation, "Task not found", code="not_found", context={"project_id": project_id, "story_id": story_id, "task_identifier": task_identifier})
 
         status = (task.get("status") or "").lower()
         already_done = status in ("done", "completed", "closed")
@@ -620,5 +694,5 @@ class ProjectManager:
             # re-raise as ValueError to indicate load failure
             raise ValueError("Failed to load project data and no valid backup available")
 
-__all__ = ["ProjectManager"]
+__all__ = ["ProjectManager", "ValidationError"]
 
