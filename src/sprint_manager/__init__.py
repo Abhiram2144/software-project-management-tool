@@ -24,11 +24,20 @@ def _now_iso() -> str:
 class SprintManager:
     """Manage sprints and their assigned stories."""
 
-    def __init__(self, data_file: Optional[str] = None):
+    def __init__(self, data_file: Optional[str] = None, project_manager: Optional[ProjectManager] = None):
         self.data_file = Path(data_file or "data/sprints.json")
         self._data: Dict[str, Any] = {"sprints": []}
         self.load_data()
-        self.pm = ProjectManager()
+        # allow injecting a ProjectManager (useful for tests); otherwise create default
+        if project_manager is not None:
+            self.pm = project_manager
+        else:
+            # try to infer projects file in same directory as sprints file (helps tests using tmp_path)
+            try:
+                inferred = str(self.data_file.parent / "projects.json")
+                self.pm = ProjectManager(data_file=inferred)
+            except Exception:
+                self.pm = ProjectManager()
 
     def load_data(self) -> Dict[str, Any]:
         if not self.data_file.parent.exists():
@@ -100,6 +109,21 @@ class SprintManager:
                 return s
         return None
 
+    def _get_story(self, project_id: int, story_id: int) -> Dict[str, Any]:
+        # ensure the ProjectManager has the latest on-disk state
+        try:
+            self.pm.load_data()
+        except Exception:
+            pass
+
+        proj = self.pm._find_project(project_id)
+        if proj is None:
+            raise ValueError("Project not found")
+        for s in proj.get("stories", []):
+            if s.get("id") == story_id:
+                return s
+        raise ValueError("Story not found")
+
     def add_story_to_sprint(self, project_id: int, story_id: int, sprint_id: int) -> Dict[str, Any]:
         """Assign a story (by project_id + story_id) to a sprint.
 
@@ -112,7 +136,7 @@ class SprintManager:
 
         # verify story exists in ProjectManager
         try:
-            story = self.pm.get_story(project_id, story_id)
+            story = self._get_story(project_id, story_id)
         except Exception:
             raise ValueError("Story not found")
 
@@ -151,7 +175,7 @@ class SprintManager:
             total = 0
             for ref in sprint.get("stories", []):
                 try:
-                    story = self.pm.get_story(ref.get("project_id"), ref.get("story_id"))
+                    story = self._get_story(ref.get("project_id"), ref.get("story_id"))
                     if float(story.get("progress", 0.0)) >= 100.0:
                         total += int(story.get("points", 0))
                 except Exception:
@@ -226,7 +250,7 @@ class SprintManager:
             sid = ref.get("story_id")
             entry: Dict[str, Any] = {"project_id": pid, "story_id": sid}
             try:
-                story = self.pm.get_story(pid, sid)
+                story = self._get_story(pid, sid)
             except Exception:
                 # cannot find story; create a placeholder and continue
                 story = {"title": "<missing>", "points": 0, "progress": 0}
@@ -365,7 +389,7 @@ class SprintManager:
             pid = ref.get("project_id")
             sid = ref.get("story_id")
             try:
-                story = self.pm.get_story(pid, sid)
+                story = self._get_story(pid, sid)
             except Exception:
                 story = {"points": 0, "progress": 0}
             pts = 0
@@ -686,6 +710,73 @@ class SprintManager:
             "message": f"Retrospective logged for sprint {sprint_id}",
         }
 
+    def _velocity_log_path(self) -> Path:
+        return Path("data/velocity_log.json")
+
+    def _load_velocity_log(self) -> List[Dict[str, Any]]:
+        p = self._velocity_log_path()
+        if not p.parent.exists():
+            p.parent.mkdir(parents=True, exist_ok=True)
+        if not p.exists():
+            return []
+        try:
+            with p.open("r", encoding="utf-8") as fh:
+                return json.load(fh)
+        except Exception:
+            return []
+
+    def _append_velocity_log(self, record: Dict[str, Any]) -> None:
+        logs = self._load_velocity_log()
+        logs.append(record)
+        p = self._velocity_log_path()
+        with p.open("w", encoding="utf-8") as fh:
+            json.dump(logs, fh, indent=2, ensure_ascii=False)
+
+    def set_sprint_status(self, sprint_id: int, status: str) -> Dict[str, Any]:
+        """Set the sprint `status`. If set to Completed, recalculate velocity
+
+        and append an entry to `data/velocity_log.json`. Returns a dict with
+        message and computed velocities.
+        """
+        sprint = self._find_sprint(sprint_id)
+        if sprint is None:
+            raise ValueError("Sprint not found")
+
+        sprint["status"] = status
+        sprint["modified_at"] = _now_iso()
+        self.save_data()
+
+        # when completed, compute velocities and persist log
+        if isinstance(status, str) and status.strip().lower() == "completed":
+            # sprint-specific completed points
+            try:
+                sprint_vel = float(self.calculate_velocity(sprint_id=sprint_id).get("velocity", 0.0))
+            except Exception:
+                sprint_vel = 0.0
+
+            # average across last 3 sprints
+            try:
+                avg_vel = float(self.calculate_velocity(sprint_id=None, last_n=3).get("velocity", 0.0))
+            except Exception:
+                avg_vel = 0.0
+
+            record = {
+                "sprint_id": sprint_id,
+                "sprint_velocity": sprint_vel,
+                "average_velocity": avg_vel,
+                "logged_at": _now_iso(),
+            }
+            try:
+                self._append_velocity_log(record)
+            except Exception:
+                # best-effort logging; don't fail the status update
+                pass
+
+            message = f"Sprint completed. Average team velocity: {avg_vel} points."
+            return {"message": message, "sprint_velocity": sprint_vel, "average_velocity": avg_vel}
+
+        return {"message": f"Sprint status set to {status}", "sprint_id": sprint_id}
+
     def manage_sprint_capacity(self, sprint_id: int, member_capacity: Optional[Dict[str, int]] = None) -> Dict[str, Any]:
         """Analyze workload distribution for a sprint with many control paths.
 
@@ -718,7 +809,7 @@ class SprintManager:
             pid = ref.get("project_id")
             sid = ref.get("story_id")
             try:
-                story = self.pm.get_story(pid, sid)
+                story = self._get_story(pid, sid)
             except Exception:
                 story = {"assignee": "unknown", "points": 0}
 

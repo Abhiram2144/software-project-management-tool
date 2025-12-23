@@ -197,6 +197,21 @@ class ProjectManager:
                 return p
         return None
 
+    def get_story(self, project_id: int, story_id: int) -> Dict[str, Any]:
+        """Return a story dict for given project_id and story_id.
+
+        Raises ValidationError if not found.
+        """
+        project = self._find_project(project_id)
+        if project is None:
+            self._raise_error("get_story", "Project not found", code="not_found", context={"project_id": project_id})
+
+        for s in project.get("stories", []):
+            if s.get("id") == story_id:
+                return s
+
+        self._raise_error("get_story", "Story not found", code="not_found", context={"project_id": project_id, "story_id": story_id})
+
     def _next_story_id(self, project: Dict[str, Any]) -> int:
         ids = [s.get("id", 0) for s in project.get("stories", [])]
         return max(ids, default=0) + 1
