@@ -117,6 +117,7 @@ def interactive_menu(pm: ProjectManager, sm: SprintManager) -> None:
         "16": "Sprint retrospective",
         "17": "Export sprint report",
         "18": "Recalculate velocity",
+        "20": "Set sprint status",
         "19": "Generate metrics dashboard",
         "0": "Quit",
     }
@@ -246,6 +247,13 @@ def interactive_menu(pm: ProjectManager, sm: SprintManager) -> None:
                 sid = prompt_int("Sprint ID (blank for avg): ", allow_empty=True)
                 last_n = prompt_int("Last N sprints (default 3): ", allow_empty=True) or 3
                 _emit(sm.calculate_velocity(sid, last_n))
+
+            elif choice == "20":
+                sid = prompt_int("Sprint ID: ")
+                status = prompt("New status (e.g. Completed, In Progress): ")
+                res = sm.set_sprint_status(sid, status)
+                # if sprint completed, the manager returns the completion message
+                _emit(res)
 
             elif choice == "19":
                 export_all_metrics()
