@@ -21,6 +21,35 @@ git push -u origin story/<ID>-<desc>
 # Merge dev -> main only after sprint completion
 
 
+### Setup (after unzip)
+```powershell
+# From repo root
+python -m venv .venv
+.\.venv\Scripts\Activate
+pip install -r requirements.txt
+```
+
+### Run the app (metrics pipeline)
+```powershell
+# From repo root, after activation
+python src/export_metrics.py
+python src/dashboard_generator.py
+# Outputs: metrics/*.json and docs/metrics/dashboard_report.html
+```
+
+### Run the CLI (menu only)
+```powershell
+python -m src.cli --menu
+# Menu covers project CRUD, stories/tasks, sprint ops (create/assign/velocity/summary/burndown/capacity/retro/report), and metrics dashboard
+```
+
+### Run tests
+```powershell
+# From repo root, after activation
+python -m unittest discover as1809/test
+```
+
+
 ### Branch-Naming Policy
 - `main` → stable, graded version  
 - `dev` → integration branch  
